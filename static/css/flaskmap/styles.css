@@ -1,0 +1,81 @@
+
+.mapDisplayColumn
+{
+    background: #EEE;
+    border-right: 1px solid #FFF;
+    display: inline-block;
+    height: 100%;
+    left: 0;
+    position: absolute;
+    width: 58%;
+}
+
+.mapDisplayColumn.fullscreen
+{
+    width: 100%;
+}
+
+.toolColumn
+{
+    background: #FFF;
+    border-left: 1px solid #CCC;
+    display: inline-block;
+    height: 100%;
+    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: absolute;
+    right: 0;
+    width: 42%;
+}
+
+.toolColumn .fileSelector
+{
+    float: left;
+    width: 100%;
+}
+
+.toolColumn .table td input
+{
+    margin: 0;
+    width: 95% !important;
+}
+
+.dropbox
+{
+    display: none;
+    height: 100%;
+    left: 0;
+    position: fixed;
+    top: 0;
+    -webkit-transition: all 0.3s ease-in-out;
+    width: 100%;
+}
+
+.dropbox.hover
+{
+    box-shadow: inset 0 0 128px #4EA6EA;
+    -webkit-transition: all 0.3s ease-in-out;
+}
+
+.normalScreenButton
+{
+    position: fixed;
+    right: 5px;
+    top: 34px;
+    z-index: 10;
+}
+
+html
+{
+    height: 100%
+}
+
+body
+{
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    -webkit-transition: all 0.3s ease-in-out;
+}

@@ -1,0 +1,76 @@
+{% raw %}
+<!DOCTYPE html>
+<html ng-app="flaskmap">
+    <head>
+        <title>map in a flask</title>
+        <meta http-equiv="content-type" content="text/html"; charset="UTF-8" />
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+        <link rel="shortcut icon" href="/static/favicon.ico" />
+        <link type="text/css" href="/static/css/flaskmap/styles.css" rel="stylesheet" />
+        <link type="text/css" href="/static/css/bootstrap/2.0.4.css" rel="stylesheet" />
+        <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyB6O5EBef858lXkLPBccM2RynvEAECwMwE&sensor=false"></script>
+        <script type="text/javascript" src="/static/js/angular/1.0.1.js"></script>
+        <script type="text/javascript" src="/static/js/jquery/1.7.2.js"></script>
+        <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/2.0.3.js"></script>
+        <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/layouts/bottomRight.js"></script>
+        <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/themes/default.js"></script>
+        <script type="text/javascript" src="/static/js/flaskmap/app.js"></script>
+    </head>
+    <body ng-controller="FlaskMapController">
+        <div ng-class="mapDisplayMode" class="mapDisplayColumn">
+            <button class="btn normalScreenButton" title="Mostrar editor" ng-show="fullscreenMap" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-small"></i></button>
+            <googlemap map-to-model="gmap" on-dblclick="createPoi" />
+        </div>
+        <div ng-show="!fullscreenMap" class="toolColumn">
+            <div style="padding: 4px;">
+                <div class="btn-group">
+                    <select class="fileSelector" ng-model="selectedContainer" ng-options="container.name for container in containers"></select>
+                </div>
+                <div class="clear: both;">
+                    <div ng-show="selectedContainer" class="input-prepend" style="float: left;">
+                        <span class="add-on">Nombre</span><input type="text" ng-model="selectedContainer.name" />
+                    </div>
+                    <div style="float: right;">
+                        <div class="btn-group" style="float: left;">
+                            <button class="btn" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="icon-file"></i></button>
+                            <button class="btn" title="Guardar lista" type="submit" ng-show="selectedContainer" ng-click="savePoiContainer()"><i class="icon-hdd"></i></button>
+                            <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedContainer" ng-click="deletePoiContainer()"><i class="icon-trash icon-white"></i></button>
+                        </div>
+                        <div class="btn-group" style="float: left; margin-left: 8px;">
+                            <a ng-show="selectedContainer" class="btn" title="Descargar lista" href="/poi/{{selectedContainer.id}}.ov2"><i class="icon-download"></i></a>
+                            <button class="btn" title="Ocultar editor" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-full"></i></button>
+                            <!-- button class="btn" title="Subir lista" type="submit" ng-click=""><i class="icon-upload"></i></button -->
+                        </div>
+                    </div>
+                </div>
+                <table class="table table-condensed table-striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%"><input type="checkbox" ng-click="markAllPois($event)" /></th>
+                            <th style="width: 40%;">Nombre</th>
+                            <th style="width: 20%;">Latitud</th>
+                            <th style="width: 20%;">Longitud</th>
+                            <th style="width: 20%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-click="panMapTo(poi)" ng-repeat="poi in selectedContainer.content">
+                            <td style="width: 5%"><input type="checkbox" ng-click="markOnMap(poi, $event)" ng-checked="isMarkOnMap(poi)" /></td>
+                            <td style="width: 40%;"><input type="text" ng-model="poi.name" /></td>
+                            <td style="width: 20%;"><input type="number" ng-model="poi.latitude" min="-90" max="90" /></td>
+                            <td style="width: 20%;"><input type="number" ng-model="poi.longitude" min="-180" max="180" /></td>
+                            <td style="width: 20%;">
+                                <div class="btn-group">
+                                    <button class="btn" title="Añadir a ruta" type="submit"><i class="icon-road"></i></button>
+                                    <button class="btn" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="icon-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <dropbox allowed-filetypes="application/octet-stream" on-drop="processDroppedElements" />
+    </body>
+</html>
+{% endraw %}
