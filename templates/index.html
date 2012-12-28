@@ -1,4 +1,3 @@
-{% raw %}
 <!DOCTYPE html>
 <html ng-app="flaskmap">
     <head>
@@ -8,7 +7,7 @@
         <link rel="shortcut icon" href="/static/favicon.ico" />
         <link type="text/css" href="/static/css/flaskmap/styles.css" rel="stylesheet" />
         <link type="text/css" href="/static/css/bootstrap/2.0.4.css" rel="stylesheet" />
-        <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyB6O5EBef858lXkLPBccM2RynvEAECwMwE&sensor=false"></script>
+        <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&sensor=false"></script>
         <script type="text/javascript" src="/static/js/angular/1.0.1.js"></script>
         <script type="text/javascript" src="/static/js/jquery/1.7.2.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/2.0.3.js"></script>
@@ -16,6 +15,7 @@
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/themes/default.js"></script>
         <script type="text/javascript" src="/static/js/flaskmap/app.js"></script>
     </head>
+{% raw %}
     <body ng-controller="FlaskMapController">
         <div ng-class="mapDisplayMode" class="mapDisplayColumn">
             <button class="btn normalScreenButton" title="Mostrar editor" ng-show="fullscreenMap" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-small"></i></button>
