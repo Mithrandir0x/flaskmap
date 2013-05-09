@@ -1,0 +1,2 @@
+Flask == 0.9
+gunicorn == 0.17.4
