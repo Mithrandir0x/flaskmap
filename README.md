@@ -5,9 +5,9 @@ This is a web application that aims to help create and manage lists of points of
 
 ## Getting started
 
-`NOTE` You should have Python 2.7 on your system before using flaskmap.
+`NOTE` If you want to develop the application on Windows, you should install [Vagrant](http://www.vagrantup.com/ "Vagrant").
 
-`NOTE` And also, you should [install Flask](http://flask.pocoo.org/docs/installation/).
+`NOTE` If you develop on Linux or Mac, you should use [VirtualEnv](https://pypi.python.org/pypi/virtualenv "VirtualEnv").
 
 Simply clone the repository:
 
@@ -19,11 +19,11 @@ Edit `settings.py` and add your Google Maps' API key:
 
 Fire up flaskmap:
 
-`python app.py`
+`python flaskmap.py`
 
 And go to [localhost:5000](http://localhost:5000/)
 
-##Usage
+## Usage
 
 When you enter for the first time to flaskmap, the screen will be divided by two pannels: the Google Map and the POI list editor.
 

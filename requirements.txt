@@ -1,4 +1,2 @@
-Flask == 0.9
-gunicorn == 0.17.4
-pymongo == 2.5
-Flask-OAuth==0.12
+Flask
+pymongo

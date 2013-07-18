@@ -4,8 +4,8 @@
     {
       "path": ".",
       "name": "flaskmap",
-      "folder_exclude_patterns": ["venv", ".vagrant"],
-      "file_exclude_patterns": ["*.sublime-*", ".gitignore"]
+      "folder_exclude_patterns": ["venv", ".vagrant", ".mongodb"],
+      "file_exclude_patterns": ["*.sublime-*", ".gitignore", "*.md", "*.txt", "Vagrantfile"]
     }
   ]
 }

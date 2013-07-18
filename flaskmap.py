@@ -1,21 +1,51 @@
 
-from flask import *
+from filestore import *
+from flask import Flask, request, session, g, redirect, url_for, abort, \
+     render_template, flash, _app_ctx_stack, make_response, Response
 from functools import wraps
+from models import *
 import base64
-import datastore
 import json
 import os
 import traceback
 
 app = Flask(__name__)
 
+def getOv2(datastore, uid):
+    def stream_ov2():
+        with datastore.get_stream_ov2(uid) as stream:
+            yield stream.read()
+    return Response(stream_ov2(), mimetype='application/octet-stream')
+
 def json_response(function):
     @wraps(function)
     def decorated_response(*args, **kwargs):
-        response = make_response(json.dumps(function(*args, **kwargs)))
+        response = make_response(json.dumps(function(*args, **kwargs), default = lambda o: o.__dict__))
         response.headers['content-type'] = 'text/json'
         return response
     return decorated_response
+
+def initializeStore():
+    print "initialize store"
+    if app.config['PROVIDER'] == 'file':
+        return FileStore(app.config['FILESTORE_PATH'])
+    elif app.config['PROVIDER'] == 'mongodb':
+        raise Exception('Not implemented yet')
+    else:
+        raise Exception('Unknown data provider')
+
+def getStore():
+    print "getting store"
+    top = _app_ctx_stack.top
+    if not hasattr(top, '_store'):
+        top._store = initializeStore()
+    return top._store
+
+@app.teardown_appcontext
+def onTeardownRequest(exception):
+    top = _app_ctx_stack.top
+    if hasattr(top, '_store'):
+        top._store.shutdown()
 
 @app.route('/')
 def index():
@@ -24,29 +54,29 @@ def index():
 @app.route('/poi/', methods=['GET'])
 @json_response
 def getPoiList():
+    datastore = getStore()
     return datastore.all()
 
 @app.route('/poi/', methods=['POST'])
 @json_response
 def createPoiContainer():
-    id, name, pois = datastore.create_container()
-    return {'id': id, 'name': name, 'content': pois}
-
-def getOv2(uid):
-    def stream_ov2():
-        with open('./bin/data/{0}/poi.ov2'.format(uid), 'rb', buffering=4096) as chunk:
-            yield chunk.read()
-    return Response(stream_ov2(), mimetype='application/octet-stream')
+    datastore = getStore()
+    return datastore.create_container()
 
 @app.route('/poi/<uid>.ov2', methods=['GET'])
 def getOv2File(uid):
-    return getOv2(uid)
+    datastore = getStore()
+    return getOv2(datastore, uid)
 
 @app.route('/poi/<uid>/', methods=['PUT'])
 def savePoiContainer(uid):
+    datastore = getStore()
     meta = json.loads(request.data)
+    content = []
+    for poi in meta['content']:
+        content.append(POI(poi['name'], poi['longitude'], poi['latitude']))
     try:
-        datastore.save_container(uid, meta['name'], meta['content'])
+        datastore.save_container(uid, meta['name'], content)
         return make_response('')
     except Exception:
         print traceback.format_exc()
@@ -55,6 +85,7 @@ def savePoiContainer(uid):
 @app.route('/poi/<uid>/', methods=['DELETE'])
 def deletePoiContainer(uid):
     try:
+        datastore = getStore()
         datastore.delete_container(uid)
         return make_response('')
     except Exception:
@@ -64,13 +95,13 @@ def deletePoiContainer(uid):
 @json_response
 def processOv2():
     try:
+        datastore = getStore()
         data = json.loads(request.data)
         name = data['name']
         bin = base64.decodestring(data['bin'][12:])
         if not bin[0] in '\x00\x01\x02\x03':
             raise Exception("Corrupted OV2 file.")
-        id, name, pois = datastore.create_container(name = name, poi_bin_string = bin)
-        return {'id': id, 'name': name, 'content': pois}
+        return datastore.create_container(name = name, poi_bin_string = bin)
     except Exception:
         print traceback.format_exc()
         abort(500)
@@ -84,6 +115,9 @@ def favicon():
 if __name__ == '__main__':
     if not os.path.exists('./bin/data/'):
         os.makedirs('./bin/data/')
+        os.makedirs('./bin/logs/')
     if os.path.exists('./settings.py'):
-        app.config.from_pyfile('./settings.py')
-    app.run(host = '0.0.0.0', port=5000)
+        app.config.from_pyfile('./settings.py', silent = False)
+    else:
+        raise Exception("No 'settings.py' file available!")
+    app.run('0.0.0.0')

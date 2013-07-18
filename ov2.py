@@ -1,11 +1,15 @@
 
+from models import *
 import struct
 
-def get_pois(path):
+def get_pois_from_stream(stream):
+    """Returns a list of POIs from the stream
+    :param stream It must implement io.RawIOBase
+    """
     pois = []
-    with open(path, "rb") as stream:
-        r_type = stream.read(1)
+    if stream:
         byteCount = 1
+        r_type = stream.read(1)
         while r_type != "":
             if ord(r_type) == 0:
                 # Deleted record
@@ -29,7 +33,7 @@ def get_pois(path):
                 longitude = string_to_signed_long(stream.read(4)) / 100000.0
                 latitude = string_to_signed_long(stream.read(4)) / 100000.0
                 name = stream.read(length - 13)[0:-1].decode('latin-1').encode("utf-8")
-                pois.append({'name': name, 'longitude': longitude, 'latitude': latitude})
+                pois.append(POI(name, longitude, latitude))
                 byteCount += length
             elif ord(r_type) == 3:
                 # Extended POI record
@@ -47,20 +51,22 @@ def get_pois(path):
             r_type = stream.read(1)
     return pois
 
-def save_pois(path, pois):
-    with open(path, 'wb') as stream:
-        for poi in pois:
-            if poi['type'] == 2:
-                pf = "<ci2l{0}s\x00".format(len(poi['name']))
-                name = poi['name'].encode('utf8')
-                length = len(poi['name']) + 14
-                longitude = int(float(poi['longitude']) * 100000)
-                latitude = int(float(poi['latitude']) * 100000)
-                stream.write(struct.pack(pf, chr(2), length, longitude, latitude, name))
-                stream.write(chr(0))
+def save_pois_to_stream(stream, pois):
+    """Writes to the stream the list of POIs with OV2 format.
+    :param stream It must implement io.RawIOBase
+    """
+    for poi in pois:
+        pf = '<ci2l%ss\x00' % len(poi.name)
+        name = poi.name.encode('utf8')
+        length = len(poi.name) + 14
+        longitude = int(float(poi.longitude) * 100000)
+        latitude = int(float(poi.latitude) * 100000)
+        stream.write(struct.pack(pf, chr(2), length, longitude, latitude, name))
+        stream.write(chr(0))
 
 def string_to_signed_long(value):
-    return struct.unpack("<l", value)[0] # Convert value to 4 byte signed long
+    """Convert 'value' to 4 byte signed long"""
+    return struct.unpack("<l", value)[0]
 
 def get_string_until_zero(stream):
     byte = stream.read(1)

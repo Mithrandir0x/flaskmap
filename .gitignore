@@ -31,4 +31,6 @@ nosetests.xml
 
 # Mr Developer
 venv
+.vagrant
 *.sublime-workspace
+test.py
