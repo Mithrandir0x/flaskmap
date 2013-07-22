@@ -6,10 +6,10 @@
         <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
         <link rel="shortcut icon" href="/static/favicon.ico" />
         <link type="text/css" href="/static/css/flaskmap/styles.css" rel="stylesheet" />
-        <link type="text/css" href="/static/css/bootstrap/2.0.4.css" rel="stylesheet" />
+        <link type="text/css" href="/static/css/bootstrap/2.3.2.css" rel="stylesheet" />
         <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key={{ go_map_api_key }}&sensor=false"></script>
-        <script type="text/javascript" src="/static/js/angular/1.0.1.js"></script>
-        <script type="text/javascript" src="/static/js/jquery/1.7.2.js"></script>
+        <script type="text/javascript" src="/static/js/angular/1.0.7.js"></script>
+        <script type="text/javascript" src="/static/js/jquery/2.0.3.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/2.0.3.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/layouts/bottomRight.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/themes/default.js"></script>
@@ -23,7 +23,7 @@
         </div>
         <div ng-show="!fullscreenMap" class="toolColumn">
             <div style="padding: 4px;">
-                <div class="btn-group">
+                <div class="btn-group" style="width: 100%;">
                     <select class="fileSelector" ng-model="selectedContainer" ng-options="container.name for container in containers"></select>
                 </div>
                 <div class="clear: both;">
@@ -46,7 +46,6 @@
                 <table class="table table-condensed table-striped">
                     <thead>
                         <tr>
-                            <th style="width: 5%"><input type="checkbox" ng-click="markAllPois($event)" /></th>
                             <th style="width: 40%;">Nombre</th>
                             <th style="width: 20%;">Latitud</th>
                             <th style="width: 20%;">Longitud</th>
@@ -55,13 +54,12 @@
                     </thead>
                     <tbody>
                         <tr ng-click="panMapTo(poi)" ng-repeat="poi in selectedContainer.content">
-                            <td style="width: 5%"><input type="checkbox" ng-click="markOnMap(poi, $event)" ng-checked="isMarkOnMap(poi)" /></td>
                             <td style="width: 40%;"><input type="text" ng-model="poi.name" /></td>
-                            <td style="width: 20%;"><input type="number" ng-model="poi.latitude" min="-90" max="90" /></td>
-                            <td style="width: 20%;"><input type="number" ng-model="poi.longitude" min="-180" max="180" /></td>
+                            <td style="width: 20%;"><input class="latlngInput" type="number" step="0.01" ng-model="poi.latitude" min="-90" max="90" /></td>
+                            <td style="width: 20%;"><input class="latlngInput" type="number" step="0.01" ng-model="poi.longitude" min="-180" max="180" /></td>
                             <td style="width: 20%;">
                                 <div class="btn-group">
-                                    <button class="btn" title="Añadir a ruta" type="submit"><i class="icon-road"></i></button>
+                                    <!-- button class="btn" title="Añadir a ruta" type="submit"><i class="icon-road"></i></button -->
                                     <button class="btn" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="icon-trash"></i></button>
                                 </div>
                             </td>

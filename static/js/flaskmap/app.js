@@ -29,6 +29,16 @@
         }
     });
 
+    /* var distanceMatrixService = new google.maps.DistanceMatrixService();
+
+    module.factory('DistanceMatrixFactory', function($q){
+        return {
+            getDistanceMatrix: function(){
+                
+            }
+        }
+    }); */
+
 })(angular.module('flaskmap.services', []));
 
 (function(module){
@@ -44,6 +54,7 @@
                 onDblclick: '='
             },
             link: function(scope, iElement){
+                google.maps.visualRefresh = true;
                 scope.mapToModel = new google.maps.Map(iElement[0], {
                     center: new google.maps.LatLng(-42.364890402363315, 171.836626953125),
                     zoom: 8,
@@ -151,7 +162,47 @@ function FlaskMapController($scope, $http, $timeout, $q)
         height: $(window).height()
     };
 
-    var markers = {};
+    var getOV2Float = function(n){
+        return ((n * 100000)|0) / 100000;
+    };
+
+    var getJSONValidPointArray = function(content){
+        a = [];
+        content.forEach(function(poi){
+            a.push({
+                name: poi.name,
+                longitude: poi.longitude,
+                latitude: poi.latitude
+            });
+        });
+
+        return a;
+    };
+
+    var createMarker = function(poi){
+        var marker = poi.marker;
+
+        if ( marker === undefined )
+        {
+            marker = new google.maps.Marker({
+                position: new google.maps.LatLng(poi.latitude, poi.longitude),
+                map: $scope.gmap,
+                title: poi.name,
+                draggable: true
+            });
+            
+            google.maps.event.addListener(marker, 'dragend', function(mouseEvent){
+                poi.latitude = getOV2Float(mouseEvent.latLng.lat());
+                poi.longitude = getOV2Float(mouseEvent.latLng.lng());
+
+                $scope.$apply();
+            });
+            
+            poi.marker = marker;
+        }
+
+        return marker;
+    }
 
     var autosave = function(){
         $scope.loading = true;
@@ -185,7 +236,7 @@ function FlaskMapController($scope, $http, $timeout, $q)
         $timeout(autosave, 60000);
     };
 
-    $timeout(autosave, 60000);
+    //$timeout(autosave, 60000);
 
     $http({method: 'GET', url: '/poi/'})
         .success(function(data) {
@@ -212,33 +263,24 @@ function FlaskMapController($scope, $http, $timeout, $q)
             $scope.gmap.panTo(new google.maps.LatLng(poi.latitude, poi.longitude));
     };
 
-    $scope.markOnMap = function(poi, $event){
-        var key = poi.latitude + "|" + poi.longitude;
-        if ( !markers[key] )
+    $scope.$watch('selectedContainer', function(newContainer, oldContainer){
+        if ( oldContainer )
         {
-            markers[key] = new google.maps.Marker({
-                position: new google.maps.LatLng(poi.latitude, poi.longitude),
-                map: $scope.gmap,
-                title: poi.name
+            oldContainer.content.forEach(function(poi){
+                poi.marker.setVisible(false);
             });
         }
 
-        markers[key].setVisible($event.target.checked);
-        markers[key].setTitle(poi.name);
-    };
-
-    $scope.markAllPois = function($event){
-        var content = $scope.selectedContainer.content;
-        for ( var i = 0 ; i < content.length ; i++ )
+        if ( newContainer )
         {
-            $scope.markOnMap(content[i], $event);
-        }
-    };
+            newContainer.content.forEach(function(poi){
+                marker = createMarker(poi);
 
-    $scope.isMarkOnMap = function(poi){
-        var key = poi.latitude + "|" + poi.longitude;
-        return markers[key] && markers[key].getVisible();
-    }
+                marker.setVisible(true);
+                marker.setTitle(poi.name);
+            });   
+        }
+    });
 
     $scope.createPoiContainer = function(){
         $http({method: 'POST', url: '/poi/'})
@@ -256,10 +298,10 @@ function FlaskMapController($scope, $http, $timeout, $q)
           data: {
             id: $scope.selectedContainer.id,
             name: $scope.selectedContainer.name,
-            content: $scope.selectedContainer.content
+            content: getJSONValidPointArray($scope.selectedContainer.content)
           }
         }).success(function(data){
-            noty({text: 'La lista de puntos de interés se ha guardado correctamente.', type: 'success'});
+            noty({text: '"' + $scope.selectedContainer.name + '" se ha guardado correctamente.', type: 'success'});
         });
     };
 
@@ -283,11 +325,13 @@ function FlaskMapController($scope, $http, $timeout, $q)
             var l = $scope.selectedContainer.content.length;
             $scope.selectedContainer.content.push({
                 name: 'POI #' + l,
-                longitude: ((mouseEvent.latLng.lng() * 100000)|0) / 100000,
-                latitude: ((mouseEvent.latLng.lat() * 100000)|0) / 100000
+                longitude: getOV2Float(mouseEvent.latLng.lng()),
+                latitude: getOV2Float(mouseEvent.latLng.lat())
             });
 
             $scope.$apply();
+
+            createMarker($scope.selectedContainer.content[l]);
         }
     };
 
