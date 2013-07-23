@@ -156,253 +156,273 @@
 
 })(angular.module('flaskmap.directives', ['flaskmap.services']));
 
-function FlaskMapController($scope, $http, $timeout, $q)
-{
-    $scope.containers = [];
-    $scope.selectedContainer = null;
-    $scope.gmap = null;
-    $scope.fullscreenMap = false;
-    $scope.mapDisplayMode = '';
+(function(module){
 
-    $scope.screen = {
-        width: $(window).width(),
-        height: $(window).height()
-    };
+    function PoiEditorController($scope, $http, $timeout, $q)
+    {
+        $scope.containers = [];
+        $scope.selectedContainer = null;
 
-    var getOV2Float = function(n){
-        return ((n * 100000)|0) / 100000;
-    };
+        $scope.screen = {
+            width: $(window).width(),
+            height: $(window).height()
+        };
 
-    var getJSONValidPointArray = function(content){
-        a = [];
-        content.forEach(function(poi){
-            a.push({
-                name: poi.name,
-                longitude: poi.longitude,
-                latitude: poi.latitude
+        var getOV2Float = function(n){
+            return ((n * 100000)|0) / 100000;
+        };
+
+        var getJSONValidPointArray = function(content){
+            var a = [];
+            content.forEach(function(poi){
+                a.push({
+                    name: poi.name,
+                    longitude: poi.longitude,
+                    latitude: poi.latitude
+                });
             });
-        });
 
-        return a;
-    };
+            return a;
+        };
 
-    var createMarker = function(poi){
-        var marker = poi.marker;
+        var createMarker = function(poi){
+            var marker = poi.marker;
 
-        if ( marker === undefined )
-        {
-            marker = new google.maps.Marker({
-                position: new google.maps.LatLng(poi.latitude, poi.longitude),
-                map: $scope.gmap,
-                title: poi.name,
-                draggable: true
-            });
-            
-            google.maps.event.addListener(marker, 'dragend', function(mouseEvent){
-                poi.latitude = getOV2Float(mouseEvent.latLng.lat());
-                poi.longitude = getOV2Float(mouseEvent.latLng.lng());
+            if ( marker === undefined )
+            {
+                marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(poi.latitude, poi.longitude),
+                    map: $scope.gmap,
+                    title: poi.name,
+                    draggable: true
+                });
+                
+                google.maps.event.addListener(marker, 'dragend', function(mouseEvent){
+                    poi.latitude = getOV2Float(mouseEvent.latLng.lat());
+                    poi.longitude = getOV2Float(mouseEvent.latLng.lng());
 
-                $scope.$apply();
-            });
-            
-            poi.marker = marker;
-        }
+                    $scope.$apply();
+                });
+                
+                poi.marker = marker;
+            }
 
-        return marker;
-    }
+            return marker;
+        };
 
-    var autosave = function(){
-        $scope.loading = true;
-        var promises = [],
-            i = $scope.containers.length;
-        while ( i-- )
-        {
-            list = $scope.containers[i];
-            promises.push(
-                $http({
-                    method: 'PUT', 
-                    url: '/poi/' + list.id + '/', 
-                    data: {
-                        id: list.id,
-                        name: list.name,
-                        content: list.content
-                    }
-                })
+        var autosave = function(){
+            $scope.loading = true;
+            var promises = [],
+                i = $scope.containers.length;
+            while ( i-- )
+            {
+                list = $scope.containers[i];
+                promises.push(
+                    $http({
+                        method: 'PUT', 
+                        url: '/poi/' + list.id + '/', 
+                        data: {
+                            id: list.id,
+                            name: list.name,
+                            content: list.content
+                        }
+                    })
+                );
+            }
+            var promise = $q.all(promises);
+            promise.then(
+                function(){
+                    noty({text: 'Guardado automático completado.', type: 'success'});
+                },
+                function(){
+                    noty({text: 'Ha habido un problema durante el guardado', type: 'error'});
+                }
             );
-        }
-        var promise = $q.all(promises);
-        promise.then(
-            function(){
-                noty({text: 'Guardado automático completado.', type: 'success'});
-            },
-            function(){
-                noty({text: 'Ha habido un problema durante el guardado', type: 'error'});
+
+            $timeout(autosave, 60000);
+        };
+
+        //$timeout(autosave, 60000);
+
+        $http({method: 'GET', url: '/poi/'})
+            .success(function(data) {
+                $scope.containers = data;
+
+                if ( data.length <= 0 ) {
+                    noty({
+                        text: 'Bienvenido a Flaskmap. No hay ninguna lista de puntos de' + 
+                            ' interés, pero puedes agregar nuevas haciendo click a ' + 
+                            '<i class="icon-file"></i>.', 
+                        timeout: 10000,
+                        type: 'information'
+                    });
+                }
+                else if ( data.length == 1 ) {
+                    noty({text: 'Se ha cargado ' + data.length + ' lista de puntos de interés.'});
+                } else {
+                    noty({text: 'Se han cargado ' + data.length + ' listas de puntos de interés.'});
+                }
+            });
+
+        $scope.panMapTo = function(poi){
+            if ( $scope.gmap ) {
+                $scope.gmap.panTo(new google.maps.LatLng(poi.latitude, poi.longitude));
             }
-        );
+        };
 
-        $timeout(autosave, 60000);
-    };
-
-    //$timeout(autosave, 60000);
-
-    $http({method: 'GET', url: '/poi/'})
-        .success(function(data) {
-            $scope.containers = data;
-
-            if ( data.length <= 0 )
+        $scope.$watch('selectedContainer', function(newContainer, oldContainer){
+            if ( oldContainer )
             {
-                noty({
-                    text: 'Bienvenido a Flaskmap. No hay ninguna lista de puntos de' + 
-                        ' interés, pero puedes agregar nuevas haciendo click a ' + 
-                        '<i class="icon-file"></i>.', 
-                    timeout: 10000,
-                    type: 'information'
+                oldContainer.content.forEach(function(poi){
+                    poi.marker.setVisible(false);
                 });
             }
-            else if ( data.length == 1 )
-                noty({text: 'Se ha cargado ' + data.length + ' lista de puntos de interés.'});
-            else    
-                noty({text: 'Se han cargado ' + data.length + ' listas de puntos de interés.'});
-        });
 
-    $scope.panMapTo = function(poi){
-        if ( $scope.gmap )
-            $scope.gmap.panTo(new google.maps.LatLng(poi.latitude, poi.longitude));
-    };
-
-    $scope.$watch('selectedContainer', function(newContainer, oldContainer){
-        if ( oldContainer )
-        {
-            oldContainer.content.forEach(function(poi){
-                poi.marker.setVisible(false);
-            });
-        }
-
-        if ( newContainer )
-        {
-            newContainer.content.forEach(function(poi){
-                marker = createMarker(poi);
-
-                marker.setVisible(true);
-                marker.setTitle(poi.name);
-            });   
-        }
-    });
-
-    $scope.createPoiContainer = function(){
-        $http({method: 'POST', url: '/poi/'})
-            .success(function(data){
-                var i = $scope.containers.push(data);
-                $scope.selectedContainer = $scope.containers[i - 1];
-            });
-    };
-
-    $scope.savePoiContainer = function(){
-        $scope.loading = true;
-        $http({
-          method: 'PUT', 
-          url: '/poi/' + $scope.selectedContainer.id + '/', 
-          data: {
-            id: $scope.selectedContainer.id,
-            name: $scope.selectedContainer.name,
-            content: getJSONValidPointArray($scope.selectedContainer.content)
-          }
-        }).success(function(data){
-            noty({text: '"' + $scope.selectedContainer.name + '" se ha guardado correctamente.', type: 'success'});
-        });
-    };
-
-    $scope.deletePoiContainer = function(){
-        $http({
-          method: 'DELETE', 
-          url: '/poi/' + $scope.selectedContainer.id + '/'
-        }).success(function(data){
-            var i = $scope.containers.indexOf($scope.selectedContainer);
-            if ( i != -1 )
+            if ( newContainer )
             {
-                $scope.selectedContainer = null;
-                $scope.containers.splice(i, 1);
+                newContainer.content.forEach(function(poi){
+                    marker = createMarker(poi);
+
+                    marker.setVisible(true);
+                    marker.setTitle(poi.name);
+                });   
             }
         });
-    };
 
-    $scope.selectContainer = function(container){
-        $scope.selectedContainer = container;
-    };
-
-    $scope.createPoi = function(mouseEvent){
-        if ( $scope.selectedContainer )
-        {
-            var l = $scope.selectedContainer.content.length;
-            $scope.selectedContainer.content.push({
-                name: 'POI #' + l,
-                longitude: getOV2Float(mouseEvent.latLng.lng()),
-                latitude: getOV2Float(mouseEvent.latLng.lat())
-            });
-
-            $scope.$apply();
-
-            createMarker($scope.selectedContainer.content[l]);
-        }
-    };
-
-    $scope.deletePoi = function(i){
-        $scope.selectedContainer.content[i].marker.setMap(null);
-        $scope.selectedContainer.content.splice(i, 1);
-    };
-
-    $scope.processDroppedElements = function(files){
-        files.forEach(function(file){
-            var reader = new FileReader();
-
-            reader.onload = function(event){
-                var request = $http({
-                    method: 'POST',
-                    url: '/ov2/',
-                    data:
-                    {
-                        name: file.name,
-                        bin: event.target.result
-                    }
-                });
-
-                request.success(function(data){
+        $scope.createPoiContainer = function(){
+            $http({method: 'POST', url: '/poi/'})
+                .success(function(data){
                     var i = $scope.containers.push(data);
                     $scope.selectedContainer = $scope.containers[i - 1];
+                });
+        };
 
-                    noty({
-                        text: 'Se ha subido el fichero [' + file.name + '] correctamente.', 
-                        type: 'success'
-                    });
+        $scope.savePoiContainer = function(){
+            $scope.loading = true;
+            $http({
+              method: 'PUT', 
+              url: '/poi/' + $scope.selectedContainer.id + '/', 
+              data: {
+                id: $scope.selectedContainer.id,
+                name: $scope.selectedContainer.name,
+                content: getJSONValidPointArray($scope.selectedContainer.content)
+              }
+            }).success(function(data){
+                noty({text: '"' + $scope.selectedContainer.name + '" se ha guardado correctamente.', type: 'success'});
+            });
+        };
+
+        $scope.deletePoiContainer = function(){
+            $http({
+              method: 'DELETE', 
+              url: '/poi/' + $scope.selectedContainer.id + '/'
+            }).success(function(data){
+                var i = $scope.containers.indexOf($scope.selectedContainer);
+                if ( i != -1 )
+                {
+                    $scope.selectedContainer = null;
+                    $scope.containers.splice(i, 1);
+                }
+            });
+        };
+
+        $scope.selectContainer = function(container){
+            $scope.selectedContainer = container;
+        };
+
+        $scope.createPoi = function(mouseEvent){
+            if ( $scope.selectedContainer )
+            {
+                var l = $scope.selectedContainer.content.length;
+                $scope.selectedContainer.content.push({
+                    name: 'POI #' + l,
+                    longitude: getOV2Float(mouseEvent.latLng.lng()),
+                    latitude: getOV2Float(mouseEvent.latLng.lat())
                 });
 
-                request.error(function(){
-                    noty({
-                        text: 'No se ha podido subir el fichero [' + file.name + ']',
-                        type: 'error'
-                    });
-                });
-            };
+                $scope.$apply();
 
-            reader.readAsDataURL(file);
+                createMarker($scope.selectedContainer.content[l]);
+            }
+        };
+
+        $scope.deletePoi = function(i){
+            $scope.selectedContainer.content[i].marker.setMap(null);
+            $scope.selectedContainer.content.splice(i, 1);
+        };
+
+        $scope.processDroppedElements = function(files){
+            files.forEach(function(file){
+                var reader = new FileReader();
+
+                reader.onload = function(event){
+                    var request = $http({
+                        method: 'POST',
+                        url: '/ov2/',
+                        data:
+                        {
+                            name: file.name,
+                            bin: event.target.result
+                        }
+                    });
+
+                    request.success(function(data){
+                        var i = $scope.containers.push(data);
+                        $scope.selectedContainer = $scope.containers[i - 1];
+
+                        noty({
+                            text: 'Se ha subido el fichero [' + file.name + '] correctamente.', 
+                            type: 'success'
+                        });
+                    });
+
+                    request.error(function(){
+                        noty({
+                            text: 'No se ha podido subir el fichero [' + file.name + ']',
+                            type: 'error'
+                        });
+                    });
+                };
+
+                reader.readAsDataURL(file);
+            });
+        };
+
+        $scope.$on('mapDoubleClick', function(event, mouseEvent){
+            $scope.createPoi(mouseEvent);
         });
     };
 
-    $scope.toggleFullscreenMap = function(){
-        $scope.fullscreenMap = !$scope.fullscreenMap;
-        
-        if ( $scope.fullscreenMap )
-            $scope.mapDisplayMode = 'fullscreen';
-        else
-            $scope.mapDisplayMode = '';
+    function FlaskMapController($scope, $http, $timeout, $q)
+    {
+        $scope.gmap = null;
+        $scope.fullscreenMap = false;
+        $scope.mapDisplayMode = '';
 
-        // It has to be done after the digest phase in angular :S
-        $timeout(function(){ google.maps.event.trigger($scope.gmap, 'resize'); }, 500);
+        $scope.PoiEditor = PoiEditorController;
+
+        $scope.emitMapDoubleClick = function(mouseEvent){
+            $scope.$broadcast('mapDoubleClick', mouseEvent);
+        };
+
+        $scope.toggleFullscreenMap = function(){
+            $scope.fullscreenMap = !$scope.fullscreenMap;
+            
+            if ( $scope.fullscreenMap )
+                $scope.mapDisplayMode = 'fullscreen';
+            else
+                $scope.mapDisplayMode = '';
+
+            // It has to be done after the digest phase in angular :S
+            $timeout(function(){ google.maps.event.trigger($scope.gmap, 'resize'); }, 500);
+        };
     };
 
-};
+    module.controller('FlaskMapController', FlaskMapController);
 
-angular.module('flaskmap', ['flaskmap.services', 'flaskmap.directives'], function(){
+})(angular.module('flaskmap.controllers', ['flaskmap.services', 'flaskmap.directives']));
+
+angular.module('flaskmap', ['flaskmap.services', 'flaskmap.directives', 'flaskmap.controllers'], function(){
     console.log('Flaskmap running!');
 
     $.noty.defaults.layout = 'bottomRight';
