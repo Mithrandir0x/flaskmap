@@ -1,7 +1,8 @@
 
 from filestore import *
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash, _app_ctx_stack, make_response, Response
+     render_template, flash, _app_ctx_stack, make_response, Response, \
+     send_from_directory
 from functools import wraps
 from models import *
 import base64
@@ -108,9 +109,10 @@ def processOv2():
 
 @app.route('/favicon.ico')
 def favicon():
+    print "favicon"
     return send_from_directory(
             os.path.join(app.root_path, 'static'),
-                'favicon.ico', mimetype='image/vnd.microsoft.icon')
+                'favicon.ico', mimetype='image/x-icon')
 
 if __name__ == '__main__':
     if not os.path.exists('./bin/data/'):

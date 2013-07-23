@@ -29,15 +29,22 @@
         }
     });
 
-    /* var distanceMatrixService = new google.maps.DistanceMatrixService();
+    var directionsService = new google.maps.DirectionsService();
 
-    module.factory('DistanceMatrixFactory', function($q){
-        return {
-            getDistanceMatrix: function(){
-                
-            }
-        }
-    }); */
+    module.service('DirectionsService', function($q){
+        this.route = function(request){
+            var deferred = $q.defer();
+            
+            directionsService.route(request, function(result, status){
+                if ( status == google.maps.DirectionsStatus.OK )
+                    deferred.resolve(result);
+                else
+                    deferred.reject(result);
+            });
+
+            return deferred.promise;
+        };
+    });
 
 })(angular.module('flaskmap.services', []));
 
@@ -319,6 +326,10 @@ function FlaskMapController($scope, $http, $timeout, $q)
         });
     };
 
+    $scope.selectContainer = function(container){
+        $scope.selectedContainer = container;
+    };
+
     $scope.createPoi = function(mouseEvent){
         if ( $scope.selectedContainer )
         {
@@ -336,6 +347,7 @@ function FlaskMapController($scope, $http, $timeout, $q)
     };
 
     $scope.deletePoi = function(i){
+        $scope.selectedContainer.content[i].marker.setMap(null);
         $scope.selectedContainer.content.splice(i, 1);
     };
 

@@ -4,7 +4,6 @@
         <title>map in a flask</title>
         <meta http-equiv="content-type" content="text/html"; charset="UTF-8" />
         <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-        <link rel="shortcut icon" href="/static/favicon.ico" />
         <link type="text/css" href="/static/css/flaskmap/styles.css" rel="stylesheet" />
         <link type="text/css" href="/static/css/bootstrap/2.3.2.css" rel="stylesheet" />
         <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key={{ go_map_api_key }}&sensor=false"></script>
@@ -13,6 +12,7 @@
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/2.0.3.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/layouts/bottomRight.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/themes/default.js"></script>
+        <script type="text/javascript" src="/static/js/bootstrap/dropdown.js"></script>
         <script type="text/javascript" src="/static/js/flaskmap/app.js"></script>
     </head>
 {% raw %}
@@ -23,27 +23,38 @@
         </div>
         <div ng-show="!fullscreenMap" class="toolColumn">
             <div style="padding: 4px;">
-                <div class="btn-group" style="width: 100%;">
-                    <select class="fileSelector" ng-model="selectedContainer" ng-options="container.name for container in containers"></select>
-                </div>
                 <div class="clear: both;">
-                    <div ng-show="selectedContainer" class="input-prepend" style="float: left;">
-                        <span class="add-on">Nombre</span><input type="text" ng-model="selectedContainer.name" />
+                    <div class="input-prepend btn-group">
+                        <button class="btn" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="icon-file"></i></button>
+                        <button class="btn" title="Guardar lista" type="submit" ng-show="selectedContainer" ng-click="savePoiContainer()"><i class="icon-hdd"></i></button>
+                        <input type="text" ng-model="selectedContainer.name" />
+                        <!-- select class="fileSelector" ng-model="selectedContainer" ng-options="container.name for container in containers"></select -->
+                        <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
+                        <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="poiMenuItems" style="width: 100%; margin-left: -1px;">
+                            <li ng-click="selectContainer(container)" ng-repeat="container in containers | orderBy:name">
+                                <a>{{ container.name }}</a>
+                            </li>
+                            <li ng-show="containers.length != 0" class="divider"></li>
+                            <li ng-click="createPoiContainer()">
+                                <a>Crear nueva lista</a>
+                            </li>
+                        </ul>
+                        <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedContainer" ng-click="deletePoiContainer()"><i class="icon-trash icon-white"></i></button>
                     </div>
                     <div style="float: right;">
                         <div class="btn-group" style="float: left;">
-                            <button class="btn" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="icon-file"></i></button>
-                            <button class="btn" title="Guardar lista" type="submit" ng-show="selectedContainer" ng-click="savePoiContainer()"><i class="icon-hdd"></i></button>
-                            <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedContainer" ng-click="deletePoiContainer()"><i class="icon-trash icon-white"></i></button>
                         </div>
-                        <div class="btn-group" style="float: left; margin-left: 8px;">
-                            <a ng-show="selectedContainer" class="btn" title="Descargar lista" href="/poi/{{selectedContainer.id}}.ov2"><i class="icon-download"></i></a>
+                        <div ng-show="selectedContainer" class="btn-group" style="float: left; margin-left: 8px;">
+                            <a class="btn" title="Descargar lista" href="/poi/{{selectedContainer.id}}.ov2"><i class="icon-download"></i></a>
                             <button class="btn" title="Ocultar editor" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-full"></i></button>
                             <!-- button class="btn" title="Subir lista" type="submit" ng-click=""><i class="icon-upload"></i></button -->
                         </div>
                     </div>
+                    <!-- div ng-show="selectedContainer" class="input-prepend" style="float: left;">
+                        <span class="add-on">Nombre</span><input type="text" ng-model="selectedContainer.name" />
+                    </div -->
                 </div>
-                <table class="table table-condensed table-striped">
+                <!-- table class="table table-condensed table-striped">
                     <thead>
                         <tr>
                             <th style="width: 40%;">Nombre</th>
@@ -52,20 +63,17 @@
                             <th style="width: 20%;"></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr ng-click="panMapTo(poi)" ng-repeat="poi in selectedContainer.content">
-                            <td style="width: 40%;"><input type="text" ng-model="poi.name" /></td>
-                            <td style="width: 20%;"><input class="latlngInput" type="number" step="0.01" ng-model="poi.latitude" min="-90" max="90" /></td>
-                            <td style="width: 20%;"><input class="latlngInput" type="number" step="0.01" ng-model="poi.longitude" min="-180" max="180" /></td>
-                            <td style="width: 20%;">
-                                <div class="btn-group">
-                                    <!-- button class="btn" title="Añadir a ruta" type="submit"><i class="icon-road"></i></button -->
-                                    <button class="btn" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="icon-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                </table -->
+                <div class="poiRow" ng-repeat="poi in selectedContainer.content">
+                    <div class="input-append">
+                        <input class="poiName" type="text" ng-model="poi.name" />
+                        <input class="latlngInput" type="number" step="0.01" ng-model="poi.latitude" min="-90" max="90" />
+                        <input class="latlngInput" type="number" step="0.01" ng-model="poi.longitude" min="-180" max="180" />
+                        <!-- button class="btn" title="Añadir a ruta" type="submit"><i class="icon-road"></i></button -->
+                        <button class="btn" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(poi)"><i class="icon-screenshot"></i></button>
+                        <button class="btn" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="icon-trash"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
         <dropbox allowed-filetypes="application/octet-stream" on-drop="processDroppedElements" />

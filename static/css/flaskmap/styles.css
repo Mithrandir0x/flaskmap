@@ -29,18 +29,6 @@
     width: 42%;
 }
 
-.toolColumn .fileSelector
-{
-    float: left;
-    width: 100%;
-}
-
-.toolColumn .table td input
-{
-    margin: 0;
-    width: 95% !important;
-}
-
 .dropbox
 {
     display: none;
@@ -78,4 +66,57 @@ body
     overflow: hidden;
     padding: 0;
     -webkit-transition: all 0.3s ease-in-out;
+}
+
+.poiRow
+{
+    text-align: center;
+    width: 100%;
+}
+
+.poiRow .poiName
+{
+    width: 30%;
+}
+
+.poiRow .input-append
+{
+    margin: 0;
+    padding: 5px 0px;
+    width: 100%;
+}
+
+.poiRow:nth-child(odd)
+{
+    background: #f0f0f0;
+}
+
+.poiRow .latlngInput
+{
+    width: 15%;
+}
+
+.input-prepend input:not(:first-child),
+.input-append input:not(:first-child)
+{
+    border-radius: 0;
+    -webkit-border-radius: 0;
+    -moz-border-radius: 0;
+    margin-left: -1px;
+    margin-right: -1px;
+}
+
+.btn-group > .btn:not(:first-child)
+{
+    border-radius: 0;
+}
+
+.btn-group > .btn:hover:not(:first-child)
+{
+    z-index: 0;
+}
+
+.poiListSelector li:hover
+{
+    cursor: pointer;
 }
