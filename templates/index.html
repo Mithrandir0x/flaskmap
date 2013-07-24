@@ -23,7 +23,21 @@
         </div>
         <div ng-show="!fullscreenMap" class="toolColumn">
             <div style="height: 100%;">
-                <div ng-controller="PoiEditor" class="poiEditor" style="padding: 4px;">
+                <div style="padding: 4px;">
+                    <div class="navbar" style="margin-bottom: 0;">
+                        <div class="navbar-inner">
+                            <a class="brand" href=".">Flaskmap</a>
+                            <ul class="nav">
+                                <li ng-class="getMenuButtonClass('poi')"><a href="#/poi">POI</a></li>
+                                <li ng-class="getMenuButtonClass('routes')"><a href="#/routes">Rutas</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div ng-controller="PoiEditor" ng-show="isContext('poi')" class="contextBox poi">
+                    <div ng-show="!selectedContainer">
+                        <span>Puede seleccionar una lista de puntos de interés <span class="caret"></span> o crear una nueva lista <i class="icon-file"></i>:</span>
+                    </div>
                     <div class="clear: both;">
                         <div class="input-prepend btn-group">
                             <button class="btn" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="icon-file"></i></button>
@@ -64,7 +78,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="routeEditor" style="">
+                <div class="contextBox route" ng-show="isContext('route')">
                 </div>
             </div>
         </div>

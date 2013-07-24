@@ -120,3 +120,15 @@ body
 {
     cursor: pointer;
 }
+
+@media only screen and (max-width:1025px) {
+    .poiListName
+    {
+        width: 150px;
+    }
+}
+
+.contextBox
+{
+    padding: 4px;
+}

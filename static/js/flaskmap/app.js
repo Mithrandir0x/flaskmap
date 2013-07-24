@@ -158,7 +158,7 @@
 
 (function(module){
 
-    function PoiEditorController($scope, $http, $timeout, $q)
+    function PoiEditorController($scope, $http, $timeout, $q, $location)
     {
         $scope.containers = [];
         $scope.selectedContainer = null;
@@ -167,6 +167,8 @@
             width: $(window).width(),
             height: $(window).height()
         };
+
+        var context = 'poi';
 
         var getOV2Float = function(n){
             return ((n * 100000)|0) / 100000;
@@ -244,9 +246,28 @@
 
         //$timeout(autosave, 60000);
 
+        var initializeUI = function(){
+            var path = $location.path().split('/');
+
+            if ( path[1] == 'poi' )
+            {
+                $scope.$emit('set-context', context);
+                var container = $scope.containers.filter(function(e){
+                    return e.id == path[2];
+                });
+
+                if ( container && container.length != 0 )
+                {
+                    $scope.selectContainer(container[0]);
+                }
+            }
+        };
+
         $http({method: 'GET', url: '/poi/'})
-            .success(function(data) {
+            .success(function(data){
                 $scope.containers = data;
+
+                initializeUI();
 
                 if ( data.length <= 0 ) {
                     noty({
@@ -269,25 +290,6 @@
                 $scope.gmap.panTo(new google.maps.LatLng(poi.latitude, poi.longitude));
             }
         };
-
-        $scope.$watch('selectedContainer', function(newContainer, oldContainer){
-            if ( oldContainer )
-            {
-                oldContainer.content.forEach(function(poi){
-                    poi.marker.setVisible(false);
-                });
-            }
-
-            if ( newContainer )
-            {
-                newContainer.content.forEach(function(poi){
-                    marker = createMarker(poi);
-
-                    marker.setVisible(true);
-                    marker.setTitle(poi.name);
-                });   
-            }
-        });
 
         $scope.createPoiContainer = function(){
             $http({method: 'POST', url: '/poi/'})
@@ -328,6 +330,7 @@
 
         $scope.selectContainer = function(container){
             $scope.selectedContainer = container;
+            $location.path('/poi/' + container.id);
         };
 
         $scope.createPoi = function(mouseEvent){
@@ -388,21 +391,49 @@
             });
         };
 
-        $scope.$on('mapDoubleClick', function(event, mouseEvent){
+        $scope.$on('map-double-click', function(event, mouseEvent){
             $scope.createPoi(mouseEvent);
+        });
+
+        $scope.$on('context-changed', function(event, ctx){
+            if ( ctx == context )
+            {
+                initializeUI();
+            }
+        });
+
+        $scope.$watch('selectedContainer', function(newContainer, oldContainer){
+            if ( oldContainer )
+            {
+                oldContainer.content.forEach(function(poi){
+                    poi.marker.setVisible(false);
+                });
+            }
+
+            if ( newContainer )
+            {
+                newContainer.content.forEach(function(poi){
+                    marker = createMarker(poi);
+
+                    marker.setVisible(true);
+                    marker.setTitle(poi.name);
+                });   
+            }
         });
     };
 
-    function FlaskMapController($scope, $http, $timeout, $q)
+    function FlaskMapController($scope, $http, $timeout, $q, $location)
     {
+        $scope.location = $location;
         $scope.gmap = null;
         $scope.fullscreenMap = false;
         $scope.mapDisplayMode = '';
+        $scope.context = 'main'
 
         $scope.PoiEditor = PoiEditorController;
 
         $scope.emitMapDoubleClick = function(mouseEvent){
-            $scope.$broadcast('mapDoubleClick', mouseEvent);
+            $scope.$broadcast('map-double-click', mouseEvent);
         };
 
         $scope.toggleFullscreenMap = function(){
@@ -416,14 +447,37 @@
             // It has to be done after the digest phase in angular :S
             $timeout(function(){ google.maps.event.trigger($scope.gmap, 'resize'); }, 500);
         };
+
+        $scope.getMenuButtonClass = function(ctx){
+            return $scope.context == ctx ? 'active' : '';
+        };
+
+        $scope.isContext = function(ctx){
+            return $scope.context == ctx;
+        };
+
+        $scope.$on('set-context', function(event, ctx){
+            $scope.context = ctx;
+        });
+
+        $scope.$watch('location.path()', function(p){
+            var path = $location.path().split('/');
+            $scope.context = path[1];
+            $scope.$broadcast('context-changed', path[1]);
+        });
+
+        if ( $location.path() == '' )
+            $location.path('/poi');
     };
 
     module.controller('FlaskMapController', FlaskMapController);
 
 })(angular.module('flaskmap.controllers', ['flaskmap.services', 'flaskmap.directives']));
 
-angular.module('flaskmap', ['flaskmap.services', 'flaskmap.directives', 'flaskmap.controllers'], function(){
+angular.module('flaskmap', ['flaskmap.services', 'flaskmap.directives', 'flaskmap.controllers'], function($locationProvider){
     console.log('Flaskmap running!');
+
+    $locationProvider.html5Mode(false);
 
     $.noty.defaults.layout = 'bottomRight';
     $.noty.defaults.timeout = 2000; // DEFAULT 2s TIMEOUT FOR NOTIES 
