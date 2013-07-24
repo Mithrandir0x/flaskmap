@@ -158,6 +158,19 @@
 
 (function(module){
 
+    var getJSONValidPointArray = function(content){
+        var a = [];
+        content.forEach(function(poi){
+            a.push({
+                name: poi.name,
+                longitude: poi.longitude,
+                latitude: poi.latitude
+            });
+        });
+
+        return a;
+    };
+
     function PoiEditorController($scope, $http, $timeout, $q, $location)
     {
         $scope.containers = [];
@@ -169,22 +182,10 @@
         };
 
         var context = 'poi';
+        var savedSelectedContainer = null;
 
         var getOV2Float = function(n){
             return ((n * 100000)|0) / 100000;
-        };
-
-        var getJSONValidPointArray = function(content){
-            var a = [];
-            content.forEach(function(poi){
-                a.push({
-                    name: poi.name,
-                    longitude: poi.longitude,
-                    latitude: poi.latitude
-                });
-            });
-
-            return a;
         };
 
         var createMarker = function(poi){
@@ -249,7 +250,7 @@
         var initializeUI = function(){
             var path = $location.path().split('/');
 
-            if ( path[1] == 'poi' )
+            if ( path[1] == context )
             {
                 $scope.$emit('set-context', context);
                 var container = $scope.containers.filter(function(e){
@@ -296,6 +297,7 @@
                 .success(function(data){
                     var i = $scope.containers.push(data);
                     $scope.selectedContainer = $scope.containers[i - 1];
+                    $location.path('/poi/' + $scope.selectedContainer.id);
                 });
         };
 
@@ -310,6 +312,7 @@
                 content: getJSONValidPointArray($scope.selectedContainer.content)
               }
             }).success(function(data){
+                $scope.loading = false;
                 noty({text: '"' + $scope.selectedContainer.name + '" se ha guardado correctamente.', type: 'success'});
             });
         };
@@ -324,6 +327,7 @@
                 {
                     $scope.selectedContainer = null;
                     $scope.containers.splice(i, 1);
+                    $location.path('/poi');
                 }
             });
         };
@@ -331,6 +335,7 @@
         $scope.selectContainer = function(container){
             $scope.selectedContainer = container;
             $location.path('/poi/' + container.id);
+            $scope.$emit('set-poi-path', container.id);
         };
 
         $scope.createPoi = function(mouseEvent){
@@ -391,14 +396,23 @@
             });
         };
 
-        $scope.$on('map-double-click', function(event, mouseEvent){
-            $scope.createPoi(mouseEvent);
+        $scope.$on('map-double-click', function(event, mouseEvent, ctx){
+            if ( ctx == context )
+            {
+                $scope.createPoi(mouseEvent);
+            }
         });
 
         $scope.$on('context-changed', function(event, ctx){
             if ( ctx == context )
             {
                 initializeUI();
+            }
+            else
+            {
+                // When changing to Route Editor, setting this to null will remove all
+                // current markers from the poi list.
+                $scope.selectedContainer = null;
             }
         });
 
@@ -422,6 +436,106 @@
         });
     };
 
+    function RouteEditor($scope, $http, $location)
+    {
+        $scope.loading = false;
+        $scope.routes = [];
+        $scope.selectedRoute = null;
+
+        var context = 'routes';
+
+        var initializeUI = function(){
+            var path = $location.path().split('/');
+
+            if ( path[1] == context )
+            {
+                $scope.$emit('set-context', context);
+                var route = $scope.routes.filter(function(e){
+                    return e.id == path[2];
+                });
+
+                if ( route && route.length != 0 )
+                {
+                    $scope.selectRoute(route[0]);
+                }
+            }
+        };
+
+        $http({method: 'GET', url: '/route/'})
+            .success(function(data){
+                $scope.routes = data;
+
+                initializeUI();
+
+                if ( data.length == 1 ) {
+                    noty({text: 'Se ha cargado ' + data.length + ' ruta.'});
+                } else {
+                    noty({text: 'Se han cargado ' + data.length + ' rutas.'});
+                }
+            });
+
+        $scope.createRoute = function(){
+            $http({method: 'POST', url: '/route/'})
+                .success(function(data){
+                    var i = $scope.routes.push(data);
+                    $scope.selectedRoute = $scope.routes[i - 1];
+                    $location.path('/routes/' + $scope.selectedRoute.id);
+                });
+        };
+
+        $scope.selectRoute = function(route){
+            $scope.selectedRoute = route;
+            $location.path('/routes/' + route.id);
+            $scope.$emit('set-route-path', route.id);
+        };
+
+        $scope.saveRoute = function(){
+            $scope.loading = true;
+            $http({
+              method: 'PUT', 
+              url: '/route/' + $scope.selectedRoute.id + '/', 
+              data: {
+                id: $scope.selectedRoute.id,
+                name: $scope.selectedRoute.name,
+                content: getJSONValidPointArray($scope.selectedRoute.content)
+              }
+            }).success(function(data){
+                $scope.loading = false;
+                noty({text: '"' + $scope.selectedRoute.name + '" se ha guardado correctamente.', type: 'success'});
+            });
+        };
+
+        $scope.deleteRoute = function(){
+            $scope.loading = true;
+            $http({
+              method: 'DELETE', 
+              url: '/route/' + $scope.selectedRoute.id + '/'
+            }).success(function(data){
+                $scope.loading = false;
+                var i = $scope.routes.indexOf($scope.selectedRoute);
+                if ( i != -1 )
+                {
+                    $scope.selectedRoute = null;
+                    $scope.routes.splice(i, 1);
+                    $location.path('/routes');
+                }
+            });
+        };
+
+        $scope.$on('context-changed', function(event, ctx){
+            if ( ctx == context )
+            {
+                initializeUI();
+            }
+        });
+
+        $scope.$on('map-double-click', function(event, mouseEvent, ctx){
+            if ( ctx == context )
+            {
+            }
+        });
+    }
+
     function FlaskMapController($scope, $http, $timeout, $q, $location)
     {
         $scope.location = $location;
@@ -430,10 +544,14 @@
         $scope.mapDisplayMode = '';
         $scope.context = 'main'
 
+        $scope.pathPoiEditor = '';
+        $scope.pathRouteEditor = '';
+
         $scope.PoiEditor = PoiEditorController;
+        $scope.RouteEditor = RouteEditor;
 
         $scope.emitMapDoubleClick = function(mouseEvent){
-            $scope.$broadcast('map-double-click', mouseEvent);
+            $scope.$broadcast('map-double-click', mouseEvent, $scope.context);
         };
 
         $scope.toggleFullscreenMap = function(){
@@ -458,6 +576,14 @@
 
         $scope.$on('set-context', function(event, ctx){
             $scope.context = ctx;
+        });
+
+        $scope.$on('set-poi-path', function(event, path){
+            $scope.pathPoiEditor = '/' + path;
+        });
+
+        $scope.$on('set-route-path', function(event, path){
+            $scope.pathRouteEditor = '/' + path;
         });
 
         $scope.$watch('location.path()', function(p){

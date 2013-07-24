@@ -28,8 +28,16 @@
                         <div class="navbar-inner">
                             <a class="brand" href=".">Flaskmap</a>
                             <ul class="nav">
-                                <li ng-class="getMenuButtonClass('poi')"><a href="#/poi">POI</a></li>
-                                <li ng-class="getMenuButtonClass('routes')"><a href="#/routes">Rutas</a></li>
+                                <li ng-class="getMenuButtonClass('poi')"><a ng-href="#/poi{{pathPoiEditor}}">POI</a></li>
+                                <li ng-class="getMenuButtonClass('routes')"><a href="#/routes{{pathRouteEditor}}">Rutas</a></li>
+                            </ul>
+                            <ul class="nav pull-right">
+                                <li>
+                                    <a href="https://github.com/Mithrandir0x/flaskmap">Github</a>
+                                </li>
+                                <li>
+                                    <button class="btn" title="Ocultar editor" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-full"></i></button>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -42,7 +50,7 @@
                         <div class="input-prepend btn-group">
                             <button class="btn" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="icon-file"></i></button>
                             <button class="btn" title="Guardar lista" type="submit" ng-show="selectedContainer" ng-click="savePoiContainer()"><i class="icon-hdd"></i></button>
-                            <input type="text" class="poiListName" ng-model="selectedContainer.name" />
+                            <input type="text" class="poiListName" ng-model="selectedContainer.name" ng-disabled="!selectedContainer" />
                             <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
                             <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="poiMenuItems" style="width: 100%; margin-left: -1px;">
                                 <li ng-click="selectContainer(container)" ng-repeat="container in containers | orderBy:name">
@@ -60,7 +68,6 @@
                             </div>
                             <div ng-show="selectedContainer" class="btn-group" style="float: left; margin-left: 8px;">
                                 <a class="btn" title="Descargar lista" href="/poi/{{selectedContainer.id}}.ov2"><i class="icon-download"></i></a>
-                                <button class="btn" title="Ocultar editor" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-full"></i></button>
                                 <!-- button class="btn" title="Subir lista" type="submit" ng-click=""><i class="icon-upload"></i></button -->
                             </div>
                         </div>
@@ -78,7 +85,26 @@
                         </div>
                     </div>
                 </div>
-                <div class="contextBox route" ng-show="isContext('route')">
+                <div ng-controller="RouteEditor" class="contextBox routes" ng-show="isContext('routes')">
+                    <div ng-show="!selectedRoute">
+                        <span>Puede seleccionar una ruta <span class="caret"></span> o crear una nueva <i class="icon-file"></i>:</span>
+                    </div>
+                    <div class="input-prepend btn-group">
+                        <button class="btn" title="Crear nueva ruta" type="submit" ng-click="createRoute()"><i class="icon-file"></i></button>
+                        <button class="btn" title="Guardar lista" type="submit" ng-show="selectedRoute" ng-click="saveRoute()"><i class="icon-hdd"></i></button>
+                        <input type="text" class="poiListName" style="width: 312px;" ng-model="selectedRoute.name" ng-disabled="!selectedRoute" />
+                        <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
+                        <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="routeItems" style="width: 100%; margin-left: -1px;">
+                            <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:name">
+                                <a>{{ route.name }}</a>
+                            </li>
+                            <li ng-show="containers.length != 0" class="divider"></li>
+                            <li ng-click="createRoute()">
+                                <a>Crear nueva ruta</a>
+                            </li>
+                        </ul>
+                        <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedRoute" ng-click="deleteRoute()"><i class="icon-trash icon-white"></i></button>
+                    </div>
                 </div>
             </div>
         </div>

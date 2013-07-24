@@ -10,3 +10,6 @@ class POI():
         self.name = name
         self.longitude = longitude
         self.latitude = latitude
+
+class Route(POIContainer):
+    pass

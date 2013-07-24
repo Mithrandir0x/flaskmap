@@ -56,7 +56,7 @@ def index():
 @json_response
 def getPoiList():
     datastore = getStore()
-    return datastore.all()
+    return datastore.all_pois()
 
 @app.route('/poi/', methods=['POST'])
 @json_response
@@ -107,6 +107,41 @@ def processOv2():
         print traceback.format_exc()
         abort(500)
 
+@app.route('/route/', methods=['GET'])
+@json_response
+def getRoutes():
+    datastore = getStore()
+    return datastore.all_routes()
+
+@app.route('/route/', methods=['POST'])
+@json_response
+def createRoute():
+    datastore = getStore()
+    return datastore.create_route()
+
+@app.route('/route/<uid>/', methods=['PUT'])
+def saveRoute(uid):
+    datastore = getStore()
+    meta = json.loads(request.data)
+    content = []
+    for poi in meta['content']:
+        content.append(POI(poi['name'], poi['longitude'], poi['latitude']))
+    try:
+        datastore.save_route(uid, meta['name'], content)
+        return make_response('')
+    except Exception:
+        print traceback.format_exc()
+        abort(500)
+
+@app.route('/route/<uid>/', methods=['DELETE'])
+def deleteRoute(uid):
+    try:
+        datastore = getStore()
+        datastore.delete_route(uid)
+        return make_response('')
+    except Exception:
+        abort(500)
+
 @app.route('/favicon.ico')
 def favicon():
     print "favicon"
@@ -115,8 +150,7 @@ def favicon():
                 'favicon.ico', mimetype='image/x-icon')
 
 if __name__ == '__main__':
-    if not os.path.exists('./bin/data/'):
-        os.makedirs('./bin/data/')
+    if not os.path.exists('./bin/logs/'):
         os.makedirs('./bin/logs/')
     if os.path.exists('./settings.py'):
         app.config.from_pyfile('./settings.py', silent = False)
