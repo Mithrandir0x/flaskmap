@@ -5,7 +5,6 @@
     
     module.service('Directions', function($q, $rootScope){
         this.route = function(origin, destination){
-            console.log("route service", origin, destination)
             var deferred = $q.defer();
             var request = {
                 origin: new google.maps.LatLng(origin.latitude, origin.longitude),
@@ -14,7 +13,6 @@
             };
             
             setTimeout(directionsService.route(request, function(result, status){
-                console.log("route request", result, status)
                 if ( status == google.maps.DirectionsStatus.OK )
                 {
                     //deferred.resolve(result, status);
@@ -163,10 +161,10 @@
         return ((n * 100000)|0) / 100000;
     };
 
-    var createMarker = function(mouseEvent, $scope, poi){
+    var createMarker = function($scope, poi){
         var marker = poi.marker;
 
-        if ( marker === undefined )
+        if ( !marker )
         {
             marker = new google.maps.Marker({
                 position: new google.maps.LatLng(poi.latitude, poi.longitude),
@@ -186,6 +184,15 @@
         }
 
         return marker;
+    };
+
+    var removeMarker = function(poi){
+        if ( poi.marker )
+        {
+            poi.marker.setMap(null);
+            google.maps.event.clearListeners(poi, 'dragend');
+            poi.marker = undefined;
+        }
     };
 
     function PoiEditorController($scope, $http, $timeout, $q, $location)
@@ -332,7 +339,7 @@
 
                 $scope.$apply();
 
-                createMarker(mouseEvent, $scope, $scope.selectedContainer.content[l]);
+                createMarker($scope, $scope.selectedContainer.content[l]);
             }
         };
 
@@ -409,7 +416,7 @@
             if ( newContainer )
             {
                 newContainer.content.forEach(function(poi){
-                    marker = createMarker(null, $scope, poi);
+                    marker = createMarker($scope, poi);
 
                     marker.setVisible(true);
                     marker.setTitle(poi.name);
@@ -512,10 +519,10 @@
             {
                 var r = rt.content;
                 r.forEach(function(wp){
+                    removeMarker(wp);
                     if ( wp.directionsRenderer )
                     {
                         wp.directionsRenderer.setMap(null);
-                        google.maps.event.clearListeners(wp.directionsRenderer, 'directions_changed');
                     }
                 });
             }
@@ -538,22 +545,22 @@
                         var q = Directions.route(wp, r[i + 1]);
                         
                         q.then(function(result, status){
-                            console.log("route promise", result, status)
                             wp.directionsRenderer = new google.maps.DirectionsRenderer({
                                 directions: result,
                                 map: $scope.gmap,
-                                routeIndex: i /*,
-                                draggable: true */
+                                routeIndex: i,
+                                markerOptions: {
+                                    visible: false
+                                }
                             });
-
-                            /* google.maps.event.addListener(wp.directionsRenderer, 'directions_changed', function() {
-                                var legs = wp.directionsRenderer.directions;
-                                console.log( wp.directionsRenderer.directions);
-                            }); */
                         });
-                        
-                        promises.push(q);
                     }
+
+                    var m = createMarker($scope, wp);
+                    
+                    google.maps.event.addListener(m, 'dragend', function(){
+                        updateRoute();
+                    });
                 });
 
                 var q = $q.all(promises);
@@ -561,7 +568,6 @@
                     console.error('An error happened while trying to render the route');
                 });
             }
-
         };
 
         $scope.createRouteWaypoint = function(mouseEvent){
@@ -581,10 +587,9 @@
         };
 
         $scope.deleteRouteWaypoint = function(i){
-            if ( $scope.selectedRoute.content[i].directionsRenderer )
-                $scope.selectedRoute.content[i].directionsRenderer.setMap(null);
-            
+            clearRoute();
             $scope.selectedRoute.content.splice(i, 1);
+            updateRoute();
         };
 
         $scope.$on('context-changed', function(event, ctx){
