@@ -1,46 +1,34 @@
 
 (function(module){
 
-    var dictionaries = {
-        alpha: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    };
-
-    var simpleTextGenerator = function(l, dictionary){
-        var text = "";
-
-        if ( l == undefined )
-            l = 16;
-
-        for ( var i = 0; i < l; i++ )
-            text += dictionary.charAt(Math.floor(Math.random() * dictionary.length));
-
-        return text;
-    };
-
-    module.value('random', {
-        text: function(l){
-            return simpleTextGenerator(l, dictionaries.alpha.slice(0, -10));
-        },
-        number: function(l){
-            return simpleTextGenerator(l, dictionaries.alpha.slice(52));
-        },
-        alphanumeric: function(l){
-            return simpleTextGenerator(l, dictionaries.alpha);
-        }
-    });
-
     var directionsService = new google.maps.DirectionsService();
-
-    module.service('DirectionsService', function($q){
-        this.route = function(request){
+    
+    module.service('Directions', function($q, $rootScope){
+        this.route = function(origin, destination){
+            console.log("route service", origin, destination)
             var deferred = $q.defer();
+            var request = {
+                origin: new google.maps.LatLng(origin.latitude, origin.longitude),
+                destination: new google.maps.LatLng(destination.latitude, destination.longitude),
+                travelMode: google.maps.TravelMode.DRIVING
+            };
             
-            directionsService.route(request, function(result, status){
+            setTimeout(directionsService.route(request, function(result, status){
+                console.log("route request", result, status)
                 if ( status == google.maps.DirectionsStatus.OK )
-                    deferred.resolve(result);
+                {
+                    //deferred.resolve(result, status);
+                    $rootScope.$apply(function(){
+                        deferred.resolve(result);
+                    });
+                }
                 else
-                    deferred.reject(result);
-            });
+                {
+                    $rootScope.$apply(function(){
+                        deferred.reject(result);
+                    });
+                }
+            }), 500);
 
             return deferred.promise;
         };
@@ -171,6 +159,35 @@
         return a;
     };
 
+    var getOV2Float = function(n){
+        return ((n * 100000)|0) / 100000;
+    };
+
+    var createMarker = function(mouseEvent, $scope, poi){
+        var marker = poi.marker;
+
+        if ( marker === undefined )
+        {
+            marker = new google.maps.Marker({
+                position: new google.maps.LatLng(poi.latitude, poi.longitude),
+                map: $scope.gmap,
+                title: poi.name,
+                draggable: true
+            });
+            
+            google.maps.event.addListener(marker, 'dragend', function(mouseEvent){
+                poi.latitude = getOV2Float(mouseEvent.latLng.lat());
+                poi.longitude = getOV2Float(mouseEvent.latLng.lng());
+
+                $scope.$apply();
+            });
+            
+            poi.marker = marker;
+        }
+
+        return marker;
+    };
+
     function PoiEditorController($scope, $http, $timeout, $q, $location)
     {
         $scope.containers = [];
@@ -183,35 +200,6 @@
 
         var context = 'poi';
         var savedSelectedContainer = null;
-
-        var getOV2Float = function(n){
-            return ((n * 100000)|0) / 100000;
-        };
-
-        var createMarker = function(poi){
-            var marker = poi.marker;
-
-            if ( marker === undefined )
-            {
-                marker = new google.maps.Marker({
-                    position: new google.maps.LatLng(poi.latitude, poi.longitude),
-                    map: $scope.gmap,
-                    title: poi.name,
-                    draggable: true
-                });
-                
-                google.maps.event.addListener(marker, 'dragend', function(mouseEvent){
-                    poi.latitude = getOV2Float(mouseEvent.latLng.lat());
-                    poi.longitude = getOV2Float(mouseEvent.latLng.lng());
-
-                    $scope.$apply();
-                });
-                
-                poi.marker = marker;
-            }
-
-            return marker;
-        };
 
         var autosave = function(){
             $scope.loading = true;
@@ -286,12 +274,6 @@
                 }
             });
 
-        $scope.panMapTo = function(poi){
-            if ( $scope.gmap ) {
-                $scope.gmap.panTo(new google.maps.LatLng(poi.latitude, poi.longitude));
-            }
-        };
-
         $scope.createPoiContainer = function(){
             $http({method: 'POST', url: '/poi/'})
                 .success(function(data){
@@ -350,7 +332,7 @@
 
                 $scope.$apply();
 
-                createMarker($scope.selectedContainer.content[l]);
+                createMarker(mouseEvent, $scope, $scope.selectedContainer.content[l]);
             }
         };
 
@@ -427,7 +409,7 @@
             if ( newContainer )
             {
                 newContainer.content.forEach(function(poi){
-                    marker = createMarker(poi);
+                    marker = createMarker(null, $scope, poi);
 
                     marker.setVisible(true);
                     marker.setTitle(poi.name);
@@ -436,13 +418,15 @@
         });
     };
 
-    function RouteEditor($scope, $http, $location)
+    function RouteEditor($scope, $http, $location, $q, Directions)
     {
         $scope.loading = false;
+        $scope.updatingRoute = true;
         $scope.routes = [];
         $scope.selectedRoute = null;
 
         var context = 'routes';
+        var directionsRenderer = new google.maps.DirectionsRenderer();
 
         var initializeUI = function(){
             var path = $location.path().split('/');
@@ -522,16 +506,114 @@
             });
         };
 
+        var clearRoute = function(route){
+            var rt = route ? route : $scope.selectedRoute;
+            if ( rt != null )
+            {
+                var r = rt.content;
+                r.forEach(function(wp){
+                    if ( wp.directionsRenderer )
+                    {
+                        wp.directionsRenderer.setMap(null);
+                        google.maps.event.clearListeners(wp.directionsRenderer, 'directions_changed');
+                    }
+                });
+            }
+        };
+
+        var updateRoute = function(){
+            var r = $scope.selectedRoute.content,
+                l = r.length,
+                promises = [];
+
+            $scope.updatingRoute = true;
+
+            clearRoute();
+
+            if ( l > 1 )
+            {
+                r.forEach(function(wp, i){
+                    if ( i < l - 1 )
+                    {
+                        var q = Directions.route(wp, r[i + 1]);
+                        
+                        q.then(function(result, status){
+                            console.log("route promise", result, status)
+                            wp.directionsRenderer = new google.maps.DirectionsRenderer({
+                                directions: result,
+                                map: $scope.gmap,
+                                routeIndex: i /*,
+                                draggable: true */
+                            });
+
+                            /* google.maps.event.addListener(wp.directionsRenderer, 'directions_changed', function() {
+                                var legs = wp.directionsRenderer.directions;
+                                console.log( wp.directionsRenderer.directions);
+                            }); */
+                        });
+                        
+                        promises.push(q);
+                    }
+                });
+
+                var q = $q.all(promises);
+                q.then(null, function(result, status){
+                    console.error('An error happened while trying to render the route');
+                });
+            }
+
+        };
+
+        $scope.createRouteWaypoint = function(mouseEvent){
+            if ( $scope.selectedRoute )
+            {
+                var l = $scope.selectedRoute.content.length;
+                $scope.selectedRoute.content.push({
+                    name: 'Punto de ruta #' + l,
+                    longitude: getOV2Float(mouseEvent.latLng.lng()),
+                    latitude: getOV2Float(mouseEvent.latLng.lat())
+                });
+                
+                updateRoute();
+
+                $scope.$apply();
+            }
+        };
+
+        $scope.deleteRouteWaypoint = function(i){
+            if ( $scope.selectedRoute.content[i].directionsRenderer )
+                $scope.selectedRoute.content[i].directionsRenderer.setMap(null);
+            
+            $scope.selectedRoute.content.splice(i, 1);
+        };
+
         $scope.$on('context-changed', function(event, ctx){
             if ( ctx == context )
             {
                 initializeUI();
+            }
+            else
+            {
+                $scope.selectedRoute = null;
+            }
+        });
+
+        $scope.$watch('selectedRoute', function(newContainer, oldContainer){
+            if ( oldContainer )
+            {
+                clearRoute(oldContainer);
+            }
+
+            if ( newContainer )
+            {
+                updateRoute();
             }
         });
 
         $scope.$on('map-double-click', function(event, mouseEvent, ctx){
             if ( ctx == context )
             {
+                $scope.createRouteWaypoint(mouseEvent);
             }
         });
     }
@@ -552,6 +634,12 @@
 
         $scope.emitMapDoubleClick = function(mouseEvent){
             $scope.$broadcast('map-double-click', mouseEvent, $scope.context);
+        };
+
+        $scope.panMapTo = function(poi){
+            if ( $scope.gmap ) {
+                $scope.gmap.panTo(new google.maps.LatLng(poi.latitude, poi.longitude));
+            }
         };
 
         $scope.toggleFullscreenMap = function(){

@@ -164,7 +164,7 @@ class FileStore():
                         'deleted': meta['deleted']
                         })))
                 with io.open('%s/route.json' % path, 'w') as stream:
-                    stream.write(unicode(json.dumps(content)))
+                    stream.write(unicode(json.dumps(content, default = lambda o: o.__dict__)))
                 return
             raise Exception('Malformed meta.json file at [%s]' % uid)
         raise Exception('Unknown UID')
