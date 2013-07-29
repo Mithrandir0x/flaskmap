@@ -26,6 +26,7 @@ then
 
     # Install pip and virtualenv
     apt-get -qq --force-yes install python-pip
+    apt-get -qq --force-yes install nginx
     #pip install virtualenv
     #virtualenv venv --distribute
 
@@ -35,6 +36,23 @@ then
     #source venv/bin/activate
 
     pip install -r /vagrant/requirements.txt
+
+    /etc/init.d/nginx start
+    
+    rm /etc/nginx/sites-enabled/default
+
+cat > /etc/nginx/sites-available/flaskmap << EOF
+server {
+    listen 5000 default_server;
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+    }
+}
+EOF
+    
+    ln -s /etc/nginx/sites-available/flaskmap /etc/nginx/sites-enabled/flaskmap
+    /etc/init.d/nginx restart
+
     
     touch ~/.vagrantonce
 fi

@@ -5,6 +5,7 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
      send_from_directory
 from functools import wraps
 from models import *
+from werkzeug.contrib.fixers import ProxyFix
 import base64
 import json
 import os
@@ -149,11 +150,14 @@ def favicon():
             os.path.join(app.root_path, 'static'),
                 'favicon.ico', mimetype='image/x-icon')
 
-if __name__ == '__main__':
-    if not os.path.exists('./bin/logs/'):
-        os.makedirs('./bin/logs/')
-    if os.path.exists('./settings.py'):
-        app.config.from_pyfile('./settings.py', silent = False)
-    else:
-        raise Exception("No 'settings.py' file available!")
+app.wsgi_app = ProxyFix(app.wsgi_app)
+
+if not os.path.exists('./bin/logs/'):
+    os.makedirs('./bin/logs/')
+if os.path.exists('./settings.py'):
+    app.config.from_pyfile('./settings.py', silent = False)
+else:
+    raise Exception("No 'settings.py' file available!")
+
+if __name__ == '__main__':    
     app.run('0.0.0.0')
