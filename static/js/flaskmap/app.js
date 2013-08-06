@@ -12,21 +12,22 @@
                 travelMode: google.maps.TravelMode.DRIVING
             };
             
-            setTimeout(directionsService.route(request, function(result, status){
-                if ( status == google.maps.DirectionsStatus.OK )
-                {
-                    //deferred.resolve(result, status);
-                    $rootScope.$apply(function(){
-                        deferred.resolve(result);
-                    });
-                }
-                else
-                {
-                    $rootScope.$apply(function(){
-                        deferred.reject(result);
-                    });
-                }
-            }), 500);
+            setTimeout(function(){
+                directionsService.route(request, function(result, status){
+                    if ( status == google.maps.DirectionsStatus.OK )
+                    {
+                        $rootScope.$apply(function(){
+                            deferred.resolve(result);
+                        });
+                    }
+                    else
+                    {
+                        $rootScope.$apply(function(){
+                            deferred.reject(result);
+                        });
+                    }
+                });
+            }, 500);
 
             return deferred.promise;
         };
@@ -195,10 +196,11 @@
         }
     };
 
-    function PoiEditorController($scope, $http, $timeout, $q, $location)
+    function PoiEditorController($scope, $http, $timeout, $q, $location, $rootScope)
     {
         $scope.containers = [];
         $scope.selectedContainer = null;
+        $scope.selectedRoute = null;
 
         $scope.screen = {
             width: $(window).width(),
@@ -348,6 +350,10 @@
             $scope.selectedContainer.content.splice(i, 1);
         };
 
+        $scope.sendPoiToRoute = function(poi, routeId){
+            $rootScope.$broadcast('add-poi-route', poi, routeId);
+        };
+
         $scope.processDroppedElements = function(files){
             files.forEach(function(file){
                 var reader = new FileReader();
@@ -405,18 +411,22 @@
             }
         });
 
+        $scope.$on('set-route-path', function(event, path){
+            $scope.selectedRoute = path;
+        });
+
         $scope.$watch('selectedContainer', function(newContainer, oldContainer){
             if ( oldContainer )
             {
                 oldContainer.content.forEach(function(poi){
-                    poi.marker.setVisible(false);
+                    removeMarker(poi);
                 });
             }
 
             if ( newContainer )
             {
                 newContainer.content.forEach(function(poi){
-                    marker = createMarker($scope, poi);
+                    var marker = createMarker($scope, poi);
 
                     marker.setVisible(true);
                     marker.setTitle(poi.name);
@@ -425,7 +435,7 @@
         });
     };
 
-    function RouteEditor($scope, $http, $location, $q, Directions)
+    function RouteEditor($scope, $http, $location, $q, $rootScope, Directions)
     {
         $scope.loading = false;
         $scope.updatingRoute = true;
@@ -435,19 +445,29 @@
         var context = 'routes';
         var directionsRenderer = new google.maps.DirectionsRenderer();
 
+        var searchRouteById = function(id){
+            var route = $scope.routes.filter(function(e){
+                return e.id == id;
+            });
+
+            if ( route && route.length != 0 ) {
+                return route[0];
+            } else {
+                return null;
+            }
+        };
+
         var initializeUI = function(){
             var path = $location.path().split('/');
 
             if ( path[1] == context )
             {
                 $scope.$emit('set-context', context);
-                var route = $scope.routes.filter(function(e){
-                    return e.id == path[2];
-                });
-
-                if ( route && route.length != 0 )
+                
+                var route = searchRouteById(path[2]);
+                if ( route )
                 {
-                    $scope.selectRoute(route[0]);
+                    $scope.selectRoute(route);
                 }
             }
         };
@@ -477,7 +497,7 @@
         $scope.selectRoute = function(route){
             $scope.selectedRoute = route;
             $location.path('/routes/' + route.id);
-            $scope.$emit('set-route-path', route.id);
+            $rootScope.$broadcast('set-route-path', route.id);
         };
 
         $scope.saveRoute = function(){
@@ -545,6 +565,7 @@
                         var q = Directions.route(wp, r[i + 1]);
                         
                         q.then(function(result, status){
+                            wp.directionRoutes = result.routes;
                             wp.directionsRenderer = new google.maps.DirectionsRenderer({
                                 directions: result,
                                 map: $scope.gmap,
@@ -554,6 +575,8 @@
                                 }
                             });
                         });
+
+                        promises.push(q);
                     }
 
                     var m = createMarker($scope, wp);
@@ -564,7 +587,16 @@
                 });
 
                 var q = $q.all(promises);
-                q.then(null, function(result, status){
+                q.then(function(){
+                    var distSum = 0;
+                    r.forEach(function(wp){
+                        wp.distance = distSum.toFixed(2);
+                        if ( wp.directionRoutes && wp.directionRoutes.length > 0 )
+                        {
+                            distSum += wp.directionRoutes[0].legs[0].distance.value / 1000;
+                        }
+                    });
+                }, function(result, status){
                     console.error('An error happened while trying to render the route');
                 });
             }
@@ -583,6 +615,29 @@
                 updateRoute();
 
                 $scope.$apply();
+            }
+        };
+
+        $scope.toggleWaypointMetadata = function(wp){
+            if ( wp )
+            {
+                if ( wp.showMeta ){
+                    wp.showMeta = false;
+                } else {
+                    wp.showMeta = true;
+                }
+            }
+            else
+            {
+                if ( $scope.selectedRoute.showMeta ){
+                    $scope.selectedRoute.showMeta = false;
+                } else {
+                    $scope.selectedRoute.showMeta = true;
+                }
+
+                $scope.selectedRoute.content.forEach(function(wp){
+                    wp.showMeta = $scope.selectedRoute.showMeta;
+                });
             }
         };
 
@@ -619,6 +674,23 @@
             if ( ctx == context )
             {
                 $scope.createRouteWaypoint(mouseEvent);
+            }
+        });
+
+        $scope.$on('add-poi-route', function(event, poi, routeId){
+            if ( routeId )
+            {
+                var route = searchRouteById(routeId);
+                if ( route )
+                {
+                    route.content.push({
+                        name: poi.name,
+                        longitude: poi.longitude,
+                        latitude: poi.latitude
+                    });
+
+                    noty({ text: 'Se ha copiado el punto "' + poi.name + '" en la lista "' + route.name + '".' });
+                }
             }
         });
     }

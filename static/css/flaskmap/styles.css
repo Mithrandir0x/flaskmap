@@ -83,7 +83,17 @@ body
 {
     margin: 0;
     padding: 5px 0px;
-    width: 100%;
+    /* width: 100%; */
+}
+
+.poiRow .distance
+{
+    margin-left: 12px;
+}
+
+.poiRow .distance input
+{
+    cursor: text;
 }
 
 .poiRow:nth-child(odd)
