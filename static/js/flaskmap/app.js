@@ -196,7 +196,7 @@
         }
     };
 
-    function PoiEditorController($scope, $http, $timeout, $q, $location, $rootScope)
+    function PoiEditorController($scope, $http, $q, $location, $rootScope)
     {
         $scope.containers = [];
         $scope.selectedContainer = null;
@@ -209,40 +209,6 @@
 
         var context = 'poi';
         var savedSelectedContainer = null;
-
-        var autosave = function(){
-            $scope.loading = true;
-            var promises = [],
-                i = $scope.containers.length;
-            while ( i-- )
-            {
-                list = $scope.containers[i];
-                promises.push(
-                    $http({
-                        method: 'PUT', 
-                        url: '/poi/' + list.id + '/', 
-                        data: {
-                            id: list.id,
-                            name: list.name,
-                            content: list.content
-                        }
-                    })
-                );
-            }
-            var promise = $q.all(promises);
-            promise.then(
-                function(){
-                    noty({text: 'Guardado automático completado.', type: 'success'});
-                },
-                function(){
-                    noty({text: 'Ha habido un problema durante el guardado', type: 'error'});
-                }
-            );
-
-            $timeout(autosave, 60000);
-        };
-
-        //$timeout(autosave, 60000);
 
         var initializeUI = function(){
             var path = $location.path().split('/');
@@ -415,6 +381,36 @@
             $scope.selectedRoute = path;
         });
 
+        $scope.$on('save-all-containers', function(){
+            var promises = [],
+                i = $scope.containers.length;
+            while ( i-- )
+            {
+                list = $scope.containers[i];
+                promises.push(
+                    $http({
+                        method: 'PUT', 
+                        url: '/poi/' + list.id + '/', 
+                        data: {
+                            id: list.id,
+                            name: list.name,
+                            content: getJSONValidPointArray(list.content)
+                        }
+                    })
+                );
+            }
+            
+            var promise = $q.all(promises);
+            promise.then(
+                function(){
+                    noty({text: 'Se han guardado con éxito las ' + $scope.containers.length + ' listas.', type: 'success'});
+                },
+                function(){
+                    noty({text: 'Ha habido un problema durante el guardado', type: 'error'});
+                }
+            );
+        });
+
         $scope.$watch('selectedContainer', function(newContainer, oldContainer){
             if ( oldContainer )
             {
@@ -435,7 +431,7 @@
         });
     };
 
-    function RouteEditor($scope, $http, $location, $q, $rootScope, Directions)
+    function RouteEditorController($scope, $http, $location, $q, $rootScope, Directions)
     {
         $scope.loading = false;
         $scope.updatingRoute = true;
@@ -707,7 +703,7 @@
         $scope.pathRouteEditor = '';
 
         $scope.PoiEditor = PoiEditorController;
-        $scope.RouteEditor = RouteEditor;
+        $scope.RouteEditor = RouteEditorController;
 
         $scope.emitMapDoubleClick = function(mouseEvent){
             $scope.$broadcast('map-double-click', mouseEvent, $scope.context);
