@@ -438,6 +438,12 @@
         $scope.routes = [];
         $scope.selectedRoute = null;
 
+        $scope.sortableOptions = {
+            stop: function(){
+                updateRoute(true);
+            }
+        };
+
         var context = 'routes';
         var directionsRenderer = new google.maps.DirectionsRenderer();
 
@@ -544,10 +550,11 @@
             }
         };
 
-        var updateRoute = function(){
+        var updateRoute = function(doPreserveViewPort){
             var r = $scope.selectedRoute.content,
                 l = r.length,
-                promises = [];
+                promises = [],
+                doPreserveViewPort = doPreserveViewPort ? true : false;
 
             $scope.updatingRoute = true;
 
@@ -566,6 +573,7 @@
                                 directions: result,
                                 map: $scope.gmap,
                                 routeIndex: i,
+                                preserveViewport: doPreserveViewPort,
                                 markerOptions: {
                                     visible: false
                                 }
@@ -761,7 +769,7 @@
 
 })(angular.module('flaskmap.controllers', ['flaskmap.services', 'flaskmap.directives']));
 
-angular.module('flaskmap', ['flaskmap.services', 'flaskmap.directives', 'flaskmap.controllers'], function($locationProvider){
+angular.module('flaskmap', ['flaskmap.services', 'flaskmap.directives', 'flaskmap.controllers', 'ui.sortable'], function($locationProvider){
     console.log('Flaskmap running!');
 
     $locationProvider.html5Mode(false);

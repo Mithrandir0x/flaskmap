@@ -7,8 +7,10 @@
         <link type="text/css" href="/static/css/bootstrap/2.3.2.css" rel="stylesheet" />
         <link type="text/css" href="/static/css/flaskmap/styles.css" rel="stylesheet" />
         <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key={{ go_map_api_key }}&sensor=false"></script>
-        <script type="text/javascript" src="/static/js/angular/1.0.7.js"></script>
         <script type="text/javascript" src="/static/js/jquery/2.0.3.js"></script>
+        <script type="text/javascript" src="/static/js/jquery/ui/1.10.3.sortable.js"></script>
+        <script type="text/javascript" src="/static/js/angular/1.0.7.js"></script>
+        <script type="text/javascript" src="/static/js/angular/ui/sortable.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/2.0.3.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/layouts/bottomRight.js"></script>
         <script type="text/javascript" src="/static/js/jquery/noty/2.0.3/themes/default.js"></script>
@@ -77,7 +79,7 @@
                             </div>
                         </div>
                     </div>
-                    <div style="overflow-y: auto; height: 90%;">
+                    <div style="overflow-y: auto; height: 90%;" ui-sortable ng-model="selectedContainer.content">
                         <div class="poiRow" ng-repeat="poi in selectedContainer.content">
                             <div class="input-append">
                                 <input class="poiName" type="text" ng-model="poi.name" />
@@ -111,7 +113,7 @@
                         </ul>
                         <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedRoute" ng-click="deleteRoute()"><i class="icon-trash icon-white"></i></button>
                     </div>
-                    <div style="overflow-y: auto; height: 90%;">
+                    <div style="overflow-y: auto; height: 90%;" ui-sortable="sortableOptions" ng-model="selectedRoute.content">
                         <div class="poiRow" ng-repeat="wp in selectedRoute.content">
                             <div class="input-append input-prepend">
                                 <span class="add-on">{{$index}}</span>
