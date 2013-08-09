@@ -83,8 +83,8 @@
                         <div class="poiRow" ng-repeat="poi in selectedContainer.content">
                             <div class="input-append">
                                 <input class="poiName" type="text" ng-model="poi.name" />
-                                <input class="latlngInput" type="number" step="0.01" ng-model="poi.latitude" min="-90" max="90" />
-                                <input class="latlngInput" type="number" step="0.01" ng-model="poi.longitude" min="-180" max="180" />
+                                <input class="latlngInput" type="number" ng-model="poi.latitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-90" max="90" />
+                                <input class="latlngInput" type="number" ng-model="poi.longitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-180" max="180" />
                                 <button class="btn" title="Añadir a ruta seleccionada" type="submit" ng-click="sendPoiToRoute(poi, selectedRoute)"><i class="icon-share-alt"></i></button>
                                 <button class="btn" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(poi)"><i class="icon-screenshot"></i></button>
                                 <button class="btn" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="icon-trash"></i></button>

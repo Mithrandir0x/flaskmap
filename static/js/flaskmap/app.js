@@ -187,6 +187,10 @@
         return marker;
     };
 
+    var updatePoiMarkerPosition = function(poi){
+        poi.marker.setPosition(new google.maps.LatLng(poi.latitude, poi.longitude));
+    };
+
     var removeMarker = function(poi){
         if ( poi.marker )
         {
@@ -285,6 +289,7 @@
                     $scope.selectedContainer = null;
                     $scope.containers.splice(i, 1);
                     $location.path('/poi');
+                    $scope.$emit('set-poi-path', '');
                 }
             });
         };
@@ -318,6 +323,10 @@
 
         $scope.sendPoiToRoute = function(poi, routeId){
             $rootScope.$broadcast('add-poi-route', poi, routeId);
+        };
+
+        $scope.updatePoiMarker = function(poi){
+            updatePoiMarkerPosition(poi);
         };
 
         $scope.processDroppedElements = function(files){
@@ -445,7 +454,6 @@
         };
 
         var context = 'routes';
-        var directionsRenderer = new google.maps.DirectionsRenderer();
 
         var searchRouteById = function(id){
             var route = $scope.routes.filter(function(e){
@@ -499,7 +507,7 @@
         $scope.selectRoute = function(route){
             $scope.selectedRoute = route;
             $location.path('/routes/' + route.id);
-            $rootScope.$broadcast('set-route-path', route.id);
+            $scope.$emit('set-route-path', route.id);
         };
 
         $scope.saveRoute = function(){
@@ -531,6 +539,7 @@
                     $scope.selectedRoute = null;
                     $scope.routes.splice(i, 1);
                     $location.path('/routes');
+                    $scope.$emit('set-route-path', '');
                 }
             });
         };
