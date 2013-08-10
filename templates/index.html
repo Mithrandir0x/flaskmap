@@ -60,8 +60,9 @@
                             <input type="text" class="poiListName" ng-model="selectedContainer.name" ng-disabled="!selectedContainer" />
                             <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
                             <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="poiMenuItems" style="width: 100%; margin-left: -1px;">
-                                <li ng-click="selectContainer(container)" ng-repeat="container in containers | orderBy:name">
-                                    <a>{{ container.name }}</a>
+                                <li ng-repeat="container in containers | orderBy:name" style="position: relative;">
+                                    <input title="Mostrar puntos de interés" type="checkbox" ng-click="showContainerMarkers($event, container)" ng-model="container.showPoints" ng-show="container != selectedContainer" style="position: absolute; left: 4px; top: 2px;" />
+                                    <a ng-click="selectContainer(container)">{{ container.name }}</a>
                                 </li>
                                 <li ng-show="containers.length != 0" class="divider"></li>
                                 <li ng-click="createPoiContainer()">

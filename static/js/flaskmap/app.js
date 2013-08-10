@@ -200,6 +200,27 @@
         }
     };
 
+    var showPOIMarkers = function($scope, container, static){
+        container.content.forEach(function(poi){
+            var marker = createMarker($scope, poi);
+
+            marker.setVisible(true);
+            marker.setTitle(poi.name);
+
+            if ( static )
+            {
+                marker.setDraggable(false);
+                google.maps.event.clearListeners(poi, 'dragend');
+            }
+        });
+    };
+
+    var removePOIMarkers = function(container){
+        container.content.forEach(function(poi){
+            removeMarker(poi);
+        });
+    };
+
     function PoiEditorController($scope, $http, $q, $location, $rootScope)
     {
         $scope.containers = [];
@@ -295,9 +316,24 @@
         };
 
         $scope.selectContainer = function(container){
+            $scope.containers.forEach(function(c){
+                if ( c.showPoints )
+                {
+                    removePOIMarkers(c);
+                    c.showPoints = false;
+                }
+            });
             $scope.selectedContainer = container;
             $location.path('/poi/' + container.id);
             $scope.$emit('set-poi-path', container.id);
+        };
+
+        $scope.showContainerMarkers = function(event, container){
+            event.stopPropagation();
+            if ( container.showPoints )
+                showPOIMarkers($scope, container, true);
+            else
+                removePOIMarkers(container);
         };
 
         $scope.createPoi = function(mouseEvent){
@@ -430,12 +466,7 @@
 
             if ( newContainer )
             {
-                newContainer.content.forEach(function(poi){
-                    var marker = createMarker($scope, poi);
-
-                    marker.setVisible(true);
-                    marker.setTitle(poi.name);
-                });   
+                showPOIMarkers($scope, newContainer);
             }
         });
     };
