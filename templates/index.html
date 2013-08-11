@@ -86,12 +86,27 @@
                                 <input class="poiName" type="text" ng-model="poi.name" />
                                 <input class="latlngInput" type="number" ng-model="poi.latitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-90" max="90" />
                                 <input class="latlngInput" type="number" ng-model="poi.longitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-180" max="180" />
-                                <button class="btn" title="Añadir a ruta seleccionada" type="submit" ng-click="sendPoiToRoute(poi, selectedRoute)"><i class="icon-share-alt"></i></button>
+                                <button class="btn" title="Añadir a ruta seleccionada" type="submit" ng-click="sendPoiToRoute(selectedRoute, poi)"><i class="icon-share-alt"></i></button>
                                 <button class="btn" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(poi)"><i class="icon-screenshot"></i></button>
                                 <button class="btn" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="icon-trash"></i></button>
                             </div>
                         </div>
                     </div>
+                    <contextmenu>
+                        <ul class="dropdown-menu" role="menu" style="display: block;">
+                            <li class="dropdown-submenu">
+                                <a>Copiar punto de ruta a lista</a>
+                                <ul class="dropdown-menu">
+                                    <li ng-repeat="container in containers" ng-show="container != selectedContainer" style="position: relative;">
+                                        <a ng-click="copyPoiToContainer(container)">{{ container.name }}</a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a ng-show="selectedRoute" ng-click="sendPoiToRoute(selectedRoute)">Añadir a ruta seleccionada</a>
+                            </li>
+                        </ul>
+                    </contextmenu>
                 </div>
                 <div ng-controller="RouteEditor" class="contextBox routes" ng-show="isContext('routes')">
                     <div ng-show="!selectedRoute">

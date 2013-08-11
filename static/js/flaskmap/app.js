@@ -61,6 +61,32 @@
         };
     });
 
+    module.directive('contextmenu', function($rootElement){
+        return {
+            template: '<div class="contextMenu" ng-transclude></div>',
+            transclude: true,
+            replace: true,
+            scope: true,
+            restrict: 'E',
+            link: function(scope, iElement){
+                iElement.css('display', 'none');
+                iElement.css('position', 'fixed');
+                iElement.css('top', '0');
+                iElement.css('left', '0');
+
+                scope.$on('context-menu-show', function(event, top, left){
+                    iElement.css('display', 'block');
+                    iElement.css('top', top);
+                    iElement.css('left', left);
+                });
+
+                scope.$on('context-menu-hide', function(){
+                    iElement.css('display', 'none');
+                });
+            }
+        };
+    });
+
     module.directive('dropbox', function(){
         return {
             template: '<div class="dropbox" ng-transclude></div>',
@@ -196,29 +222,9 @@
         {
             poi.marker.setMap(null);
             google.maps.event.clearListeners(poi, 'dragend');
+            google.maps.event.clearListeners(poi, 'click');
             poi.marker = undefined;
         }
-    };
-
-    var showPOIMarkers = function($scope, container, static){
-        container.content.forEach(function(poi){
-            var marker = createMarker($scope, poi);
-
-            marker.setVisible(true);
-            marker.setTitle(poi.name);
-
-            if ( static )
-            {
-                marker.setDraggable(false);
-                google.maps.event.clearListeners(poi, 'dragend');
-            }
-        });
-    };
-
-    var removePOIMarkers = function(container){
-        container.content.forEach(function(poi){
-            removeMarker(poi);
-        });
     };
 
     function PoiEditorController($scope, $http, $q, $location, $rootScope)
@@ -226,6 +232,7 @@
         $scope.containers = [];
         $scope.selectedContainer = null;
         $scope.selectedRoute = null;
+        $scope.selectedPoi = null;
 
         $scope.screen = {
             width: $(window).width(),
@@ -249,7 +256,63 @@
                 {
                     $scope.selectContainer(container[0]);
                 }
+
+                if ( $scope.gmap )
+                {
+                    google.maps.event.addListener($scope.gmap, 'click', hideContextMenu);
+                    google.maps.event.addListener($scope.gmap, 'dragstart', hideContextMenu);
+                    google.maps.event.addListener($scope.gmap, 'zoom_changed', hideContextMenu);
+                }
             }
+        };
+
+        var addShowContextMenuEvent = function(poi, marker){
+            google.maps.event.addListener(marker, 'rightclick', function(mouseEvent){
+                var map = $scope.gmap;
+
+                var scale = Math.pow(2, map.getZoom());
+                var nw = new google.maps.LatLng(
+                    map.getBounds().getNorthEast().lat(),
+                    map.getBounds().getSouthWest().lng()
+                );
+                var worldCoordinateNW = map.getProjection().fromLatLngToPoint(nw);
+                var worldCoordinate = map.getProjection().fromLatLngToPoint(marker.getPosition());
+                var pixel = new google.maps.Point(
+                    ((worldCoordinate.x - worldCoordinateNW.x) * scale)|0,
+                    ((worldCoordinate.y - worldCoordinateNW.y) * scale)|0
+                );
+
+                $scope.$broadcast('context-menu-show', pixel.y|0, pixel.x|0);
+                $scope.selectedPoi = poi;
+            });
+        };
+
+        var hideContextMenu = function(){
+            $scope.selectedPoi = null;
+            $scope.$broadcast('context-menu-hide');
+        };
+
+        var showPOIMarkers = function($scope, container, static){
+            container.content.forEach(function(poi){
+                var marker = createMarker($scope, poi);
+
+                marker.setVisible(true);
+                marker.setTitle(poi.name);
+
+                addShowContextMenuEvent(poi, marker);
+
+                if ( static )
+                {
+                    marker.setDraggable(false);
+                    google.maps.event.clearListeners(marker, 'dragend');
+                }
+            });
+        };
+
+        var removePOIMarkers = function(container){
+            container.content.forEach(function(poi){
+                removeMarker(poi);
+            });
         };
 
         $http({method: 'GET', url: '/poi/'})
@@ -348,7 +411,9 @@
 
                 $scope.$apply();
 
-                createMarker($scope, $scope.selectedContainer.content[l]);
+                var marker = createMarker($scope, $scope.selectedContainer.content[l]);
+
+                addShowContextMenuEvent($scope.selectedContainer.content[l], marker);
             }
         };
 
@@ -357,8 +422,29 @@
             $scope.selectedContainer.content.splice(i, 1);
         };
 
-        $scope.sendPoiToRoute = function(poi, routeId){
-            $rootScope.$broadcast('add-poi-route', poi, routeId);
+        $scope.sendPoiToRoute = function(routeId, poi){
+            if ( poi )
+            {
+                $rootScope.$broadcast('add-poi-route', poi, routeId);
+            }
+            else
+            {
+                if ( $scope.selectedPoi )
+                {
+                    $rootScope.$broadcast('add-poi-route', $scope.selectedPoi, routeId);
+                    hideContextMenu();
+                }
+            }
+        };
+
+        $scope.copyPoiToContainer = function(container){
+            container.content.push({
+                name: $scope.selectedPoi.name,
+                longitude: $scope.selectedPoi.longitude,
+                latitude: $scope.selectedPoi.latitude
+            });
+
+            hideContextMenu();
         };
 
         $scope.updatePoiMarker = function(poi){
@@ -419,6 +505,15 @@
                 // When changing to Route Editor, setting this to null will remove all
                 // current markers from the poi list.
                 $scope.selectedContainer = null;
+
+                hideContextMenu();
+
+                if ( $scope.gmap )
+                {
+                    google.maps.event.clearListeners($scope.gmap, 'click');
+                    google.maps.event.clearListeners($scope.gmap, 'dragstart');
+                    google.maps.event.clearListeners($scope.gmap, 'zoom_changed');
+                }
             }
         });
 
@@ -538,7 +633,7 @@
         $scope.selectRoute = function(route){
             $scope.selectedRoute = route;
             $location.path('/routes/' + route.id);
-            $scope.$emit('set-route-path', route.id);
+            $rootScope.$broadcast('set-route-path', route.id);
         };
 
         $scope.saveRoute = function(){

@@ -126,6 +126,7 @@ body
     z-index: 0;
 }
 
+.contextMenu .dropdown-menu li:hover,
 .poiListSelector li:hover
 {
     cursor: pointer;
