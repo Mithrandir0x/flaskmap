@@ -115,8 +115,8 @@
                     <div class="input-prepend btn-group">
                         <button class="btn" title="Crear nueva ruta" type="submit" ng-click="createRoute()"><i class="icon-file"></i></button>
                         <button class="btn" title="Guardar lista" type="submit" ng-show="selectedRoute" ng-click="saveRoute()"><i class="icon-hdd"></i></button>
-                        <!-- button class="btn" title="Información" type="submit" ng-show="selectedRoute" ng-click="toggleWaypointMetadata()"><i class="icon-info-sign"></i></button -->
-                        <input type="text" class="poiListName" style="width: 312px;" ng-model="selectedRoute.name" ng-disabled="!selectedRoute" />
+                        <button class="btn" title="Información" type="submit" ng-show="selectedRoute" ng-click="toggleWaypointMetadata()"><i class="icon-info-sign"></i></button>
+                        <input type="text" class="poiListName span2" ng-model="selectedRoute.name" ng-disabled="!selectedRoute" />
                         <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
                         <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="routeItems" style="width: 100%; margin-left: -1px;">
                             <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:name">
@@ -129,6 +129,17 @@
                         </ul>
                         <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedRoute" ng-click="deleteRoute()"><i class="icon-trash icon-white"></i></button>
                     </div>
+                    <div class="meta" style="margin-left: 3px;">
+                        <div class="input-prepend input-append distance">
+                            <span class="add-on"><i class="icon-road"></i></span>
+                            <input class="span1" readonly="readonly" type="text" ng-model="selectedRoute.distance" />
+                            <span class="add-on">Km</span>
+                        </div>
+                        <div class="input-prepend input-append duration">
+                            <span class="add-on"><i class="icon-time"></i></span>
+                            <input class="span2" type="text" readonly="readonly" ng-model="selectedRoute.duration" />
+                        </div>
+                    </div>
                     <div style="overflow-y: auto; height: 90%;" ui-sortable="sortableOptions" ng-model="selectedRoute.content">
                         <div class="poiRow" ng-repeat="wp in selectedRoute.content">
                             <div class="input-append input-prepend">
@@ -138,7 +149,7 @@
                                 <!-- input class="latlngInput" type="number" step="0.01" ng-model="wp.longitude" min="-180" max="180" / -->
                                 <!-- button class="btn" title="Añadir a ruta" type="submit"><i class="icon-road"></i></button -->
                                 <button class="btn" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(wp)"><i class="icon-screenshot"></i></button>
-                                <!-- button class="btn" title="Información" type="submit" ng-click="toggleWaypointMetadata(wp)"><i class="icon-info-sign"></i></button -->
+                                <button class="btn" title="Información" type="submit" ng-click="toggleWaypointMetadata(wp)"><i class="icon-info-sign"></i></button>
                                 <button class="btn" title="Borrar punto de ruta" type="submit" ng-click="deleteRouteWaypoint($index)"><i class="icon-trash"></i></button>
                             </div>
                             <div class="distance control-group info input-append input-prepend">
@@ -146,7 +157,17 @@
                                 <input class="span1" readonly="readonly" type="text" ng-model="wp.distance" />
                                 <span class="add-on">Km</span>
                             </div>
-                            <div class="meta" ng-show="wp.showMeta"></div>
+                            <div class="meta" ng-show="wp.showMeta">
+                                <div ng-show="!$last" class="input-prepend input-append distance">
+                                    <span class="add-on"><i class="icon-road"></i> {{$index}} &rarr; {{$index + 1}}</span>
+                                    <input class="span1" readonly="readonly" type="text" ng-model="wp.distanceLeg" />
+                                    <span class="add-on">Km</span>
+                                </div>
+                                <div ng-show="!$last" class="input-prepend input-append duration">
+                                    <span class="add-on"><i class="icon-time"></i> {{$index}} &rarr; {{$index + 1}}</span>
+                                    <input class="span2" type="text" readonly="readonly" ng-model="wp.duration" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

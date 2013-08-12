@@ -86,24 +86,41 @@ body
     /* width: 100%; */
 }
 
-.poiRow .distance
+.poiRow .distance,
+.poiRow .duration
 {
     margin-left: 12px;
 }
 
-.poiRow .distance input
+.poiRow .distance input,
+.routes > .meta input
+{
+    width: 64px;
+}
+
+.routes > .meta .duration input
+{
+    width: 84px;
+}
+
+.poiRow input[type="text"]
 {
     cursor: text;
 }
 
 .poiRow:nth-child(odd)
 {
-    background: #f0f0f0;
+    background: rgba(240, 240, 240, 0.55);
 }
 
 .poiRow .latlngInput
 {
     width: 15%;
+}
+
+.routes > .meta
+{
+    display: inline-block;
 }
 
 .input-prepend input:not(:first-child),

@@ -227,6 +227,29 @@
         }
     };
 
+    var getHumanTime = function(t){
+        // Grabbed from http://stackoverflow.com/questions/8211744/convert-milliseconds-or-seconds-into-human-readable-form
+        var s = '';
+        var days = ((t % 31536000) / 86400)|0;
+        var hours = (((t % 31536000) % 86400) / 3600)|0;
+        var minutes = ((((t % 31536000) % 86400) % 3600) / 60)|0;
+        var seconds = (((t % 31536000) % 86400) % 3600) % 60;
+
+        if ( days )
+            s += days + 'd '
+
+        if ( hours )
+            s += hours + 'h ';
+
+        if ( minutes )
+            s += minutes + 'm ';
+
+        if ( seconds )
+            s+= seconds + 's';
+
+        return s;
+    };
+
     function PoiEditorController($scope, $http, $q, $location, $rootScope)
     {
         $scope.containers = [];
@@ -727,14 +750,22 @@
 
                 var q = $q.all(promises);
                 q.then(function(){
-                    var distSum = 0;
+                    var distSum = 0, durSum = 0;
+                    
                     r.forEach(function(wp){
                         wp.distance = distSum.toFixed(2);
                         if ( wp.directionRoutes && wp.directionRoutes.length > 0 )
                         {
-                            distSum += wp.directionRoutes[0].legs[0].distance.value / 1000;
+                            var leg = wp.directionRoutes[0].legs[0];
+                            wp.distanceLeg = (leg.distance.value / 1000).toFixed(2);
+                            wp.duration = leg.duration.text;
+                            distSum += leg.distance.value / 1000;
+                            durSum += leg.duration.value;
                         }
                     });
+
+                    $scope.selectedRoute.distance = distSum.toFixed(2);
+                    $scope.selectedRoute.duration = getHumanTime(durSum);
                 }, function(result, status){
                     console.error('An error happened while trying to render the route');
                 });
