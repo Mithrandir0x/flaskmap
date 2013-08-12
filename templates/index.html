@@ -129,7 +129,7 @@
                         </ul>
                         <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedRoute" ng-click="deleteRoute()"><i class="icon-trash icon-white"></i></button>
                     </div>
-                    <div class="meta" style="margin-left: 3px;">
+                    <div ng-show="selectedRoute" class="meta" style="margin-left: 3px;">
                         <div class="input-prepend input-append distance">
                             <span class="add-on"><i class="icon-road"></i></span>
                             <input class="span1" readonly="readonly" type="text" ng-model="selectedRoute.distance" />
