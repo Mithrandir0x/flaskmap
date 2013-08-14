@@ -63,6 +63,7 @@
                                 <li ng-repeat="container in containers | orderBy:'name'" style="position: relative;">
                                     <input title="Mostrar puntos de interés" type="checkbox" ng-click="showContainerMarkers($event, container)" ng-model="container.showPoints" ng-show="container != selectedContainer" style="position: absolute; left: 4px; top: 2px;" />
                                     <a ng-click="selectContainer(container)">{{ container.name }}</a>
+                                    <a class="badge badge-inverse" ng-click="preventDefault($event)" title="Descargar lista" href="/poi/{{container.id}}.ov2"><i class="icon-download icon-white"></i></a>
                                 </li>
                                 <li ng-show="containers.length != 0" class="divider"></li>
                                 <li ng-click="createPoiContainer()">
@@ -117,7 +118,7 @@
                         <button class="btn" title="Guardar lista" type="submit" ng-show="selectedRoute" ng-click="saveRoute()"><i class="icon-hdd"></i></button>
                         <button class="btn" title="Información" type="submit" ng-show="selectedRoute" ng-click="toggleWaypointMetadata()"><i class="icon-info-sign"></i></button>
                         <input type="text" class="poiListName span2" ng-model="selectedRoute.name" ng-disabled="!selectedRoute" />
-                        <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
+                        <button class="btn dropdown-toggle" data-toggle="dropdown" ng-disabled="updatingRoute" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
                         <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="routeItems" style="width: 100%; margin-left: -1px;">
                             <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:'name'">
                                 <a>{{ route.name }}</a>

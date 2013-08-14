@@ -615,7 +615,7 @@
     function RouteEditorController($scope, $http, $location, $q, $rootScope, Directions)
     {
         $scope.loading = false;
-        $scope.updatingRoute = true;
+        $scope.updatingRoute = false;
         $scope.routes = [];
         $scope.selectedRoute = null;
 
@@ -789,8 +789,10 @@
 
                     $scope.selectedRoute.distance = distSum.toFixed(2);
                     $scope.selectedRoute.duration = getHumanTime(durSum);
+                    $scope.updatingRoute = false;
                 }, function(status){
                     console.error('An error happened while trying to render the route: ' + status);
+                    $scope.updatingRoute = false;
                 });
             }
         };
@@ -935,6 +937,10 @@
 
         $scope.isContext = function(ctx){
             return $scope.context == ctx;
+        };
+
+        $scope.preventDefault = function(event){
+            event.stopPropagation();
         };
 
         $scope.$on('set-context', function(event, ctx){

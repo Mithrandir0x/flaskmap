@@ -193,3 +193,11 @@ body
     margin-top: 0;
     margin-right: 15px;
 }
+
+.poiListSelector > li > a.badge
+{
+    padding: 0px 5px;
+    position: absolute;
+    top: 2px;
+    right: 5px;
+}
