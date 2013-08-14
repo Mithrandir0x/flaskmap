@@ -5,7 +5,7 @@ SECRET_KEY = 'secret_level'
 
 # FLASKMAP
 PROVIDER = 'file'
-GOOGLE_MAPS_API_KEY = 'AIzaSyAE2HNuleCVfTxrq9ip1uq8IA69XZenAcg'
+GOOGLE_MAPS_API_KEY = ''
 
 # FILE STORE PROVIDER
 FILESTORE_PATH = '/vagrant/bin/data/'
