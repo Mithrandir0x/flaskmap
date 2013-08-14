@@ -119,7 +119,7 @@
                         <input type="text" class="poiListName span2" ng-model="selectedRoute.name" ng-disabled="!selectedRoute" />
                         <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
                         <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="routeItems" style="width: 100%; margin-left: -1px;">
-                            <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:name">
+                            <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:-name">
                                 <a>{{ route.name }}</a>
                             </li>
                             <li ng-show="containers.length != 0" class="divider"></li>
