@@ -3,31 +3,54 @@
 
     var directionsService = new google.maps.DirectionsService();
     
-    module.service('Directions', function($q, $rootScope){
-        this.route = function(origin, destination){
-            var deferred = $q.defer();
-            var request = {
-                origin: new google.maps.LatLng(origin.latitude, origin.longitude),
-                destination: new google.maps.LatLng(destination.latitude, destination.longitude),
-                travelMode: google.maps.TravelMode.DRIVING
-            };
-            
-            setTimeout(function(){
+    module.service('Directions', function($q, $rootScope, $timeout){
+        var jobs = [];
+
+        var processJob = function(){
+            if ( jobs.length > 0 )
+            {
+                var job = jobs[0];
+                var request = job.r;
+                var deferred = job.d;
+                
                 directionsService.route(request, function(result, status){
                     if ( status == google.maps.DirectionsStatus.OK )
                     {
                         $rootScope.$apply(function(){
                             deferred.resolve(result);
+                            
+                            jobs.splice(0, 1);
+                            $timeout(processJob, 500);
                         });
                     }
                     else
                     {
                         $rootScope.$apply(function(){
-                            deferred.reject(result);
+                            deferred.reject(status);
                         });
                     }
                 });
-            }, 500);
+            }
+        };
+
+        this.route = function(origin, destination){
+            var deferred = $q.defer();
+            
+            var request = {
+                origin: new google.maps.LatLng(origin.latitude, origin.longitude),
+                destination: new google.maps.LatLng(destination.latitude, destination.longitude),
+                travelMode: google.maps.TravelMode.DRIVING
+            };
+
+            if ( jobs.length == 0 )
+            {
+                jobs.push({ r: request, d: deferred });
+                processJob();
+            }
+            else
+            {
+                jobs.push({ r: request, d: deferred });
+            }
 
             return deferred.promise;
         };
@@ -744,7 +767,7 @@
                     var m = createMarker($scope, wp);
                     
                     google.maps.event.addListener(m, 'dragend', function(){
-                        updateRoute();
+                        updateRoute(true);
                     });
                 });
 
@@ -766,8 +789,8 @@
 
                     $scope.selectedRoute.distance = distSum.toFixed(2);
                     $scope.selectedRoute.duration = getHumanTime(durSum);
-                }, function(result, status){
-                    console.error('An error happened while trying to render the route');
+                }, function(status){
+                    console.error('An error happened while trying to render the route: ' + status);
                 });
             }
         };
@@ -782,7 +805,7 @@
                     latitude: getOV2Float(mouseEvent.latLng.lat())
                 });
                 
-                updateRoute();
+                updateRoute(true);
 
                 $scope.$apply();
             }
@@ -814,7 +837,7 @@
         $scope.deleteRouteWaypoint = function(i){
             clearRoute();
             $scope.selectedRoute.content.splice(i, 1);
-            updateRoute();
+            updateRoute(true);
         };
 
         $scope.$on('context-changed', function(event, ctx){
@@ -836,7 +859,12 @@
 
             if ( newContainer )
             {
-                updateRoute();
+                if ( newContainer.content.length > 0 )
+                {
+                    $scope.panMapTo(newContainer.content[0])
+                }
+
+                updateRoute(true);
             }
         });
 
