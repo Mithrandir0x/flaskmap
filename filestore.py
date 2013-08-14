@@ -1,6 +1,7 @@
 
 from models import *
 from uuid import uuid4
+from shutil import copy, rmtree
 from time import time
 import io
 import json
@@ -16,7 +17,7 @@ class FileStore():
             os.makedirs(datapath)
             os.makedirs(self.poiDataPath)
             os.makedirs(self.routeDataPath)
-    
+
     def all_pois(self):
         poiList = []
         lists = os.listdir(self.poiDataPath)
@@ -58,6 +59,24 @@ class FileStore():
                 container.content = ov2.get_pois_from_stream(stream)
         return container
 
+    def get_container(self, uid, evenDelete = False):
+        path = '%s/%s/' % ( self.poiDataPath, uid )
+        if os.path.exists(path):
+            with io.open('%s/meta.json' % path) as metafile:
+                meta = json.loads(metafile.read())
+                if not meta['deleted'] or evenDelete:
+                    container = POIContainer(meta['name'])
+                    container.id = uid
+                    container.content = []
+                    if os.path.exists('%s/poi.ov2' % path):
+                        with io.open('%s/poi.ov2' % path, 'rb') as stream:
+                            container.content = ov2.get_pois_from_stream(stream)
+                    return container
+                else:
+                    return None
+            raise Exception('Malformed meta.json file at [%s]' % uid)
+        raise Exception('Unknown UID')
+
     def save_container(self, uid, name, content):
         path = '%s/%s/' % ( self.poiDataPath, uid )
         if os.path.exists(path):
@@ -79,9 +98,12 @@ class FileStore():
             raise Exception('Malformed meta.json file at [%s]' % uid)
         raise Exception('Unknown UID')
 
-    def delete_container(self, uid, force = True):
+    def delete_container(self, uid, force = False):
         path = '%s/%s/' % ( self.poiDataPath, uid )
         if os.path.exists(path):
+            if force:
+                rmtree(path)
+                return
             meta = None
             ts = int(time())
             with io.open('%s/meta.json' % path) as metafile:
@@ -111,6 +133,20 @@ class FileStore():
                 if self.stream:
                     self.stream.close()
         return StreamOV2(self.poiDataPath, uid)
+    
+    def _load_route(self, folder):
+        path = self.routeDataPath + folder
+        route = None
+        with io.open('%s/meta.json' % path) as metafile:
+            meta = json.loads(metafile.read())
+            if not meta['deleted']:
+                route = Route(meta['name'])
+                route.id = folder
+                route.content = []
+                if os.path.exists('%s/route.json' % path):
+                    with io.open('%s/route.json' % path, 'rb') as stream:
+                        route.content = json.load(stream)
+        return route
 
     def all_routes(self):
         routeList = []
@@ -129,8 +165,16 @@ class FileStore():
                     routeList.append(route)
         return routeList
 
-    def create_route(self, name = "Nueva ruta", pois = []):
+    def create_route(self, name = "Nueva ruta", pois = [], poi_id = None):
         uid = uuid4().hex
+        if poi_id != None:
+            path = '%s/%s/' % ( self.poiDataPath, poi_id )
+            cpPath = '%s/%s/' % ( self.poiDataPath, uid )
+            if os.path.exists(path):
+                copy(path, cpPath)
+                return self._load_route(uid)
+            else:
+                raise Exception('Unknown UID')
         container = Route(name)
         container.id = uid
         path = '%s/%s/' % ( self.routeDataPath, uid )
