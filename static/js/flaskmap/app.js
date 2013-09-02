@@ -795,6 +795,10 @@
                     $scope.updatingRoute = false;
                 });
             }
+            else
+            {
+                $scope.updatingRoute = false;
+            }
         };
 
         $scope.createRouteWaypoint = function(mouseEvent){
