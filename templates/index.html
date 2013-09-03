@@ -4,7 +4,8 @@
         <title>map in a flask</title>
         <meta http-equiv="content-type" content="text/html"; charset="UTF-8" />
         <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-        <link type="text/css" href="/static/css/bootstrap/2.3.2.css" rel="stylesheet" />
+        <link type="text/css" href="/static/css/bootstrap/3.0.0-united.css" rel="stylesheet" />
+        <!-- link type="text/css" href="/static/css/bootstrap/3.0.0-theme.css" rel="stylesheet" /-->
         <link type="text/css" href="/static/css/flaskmap/styles.css" rel="stylesheet" />
         <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key={{ go_map_api_key }}&sensor=false"></script>
         <script type="text/javascript" src="/static/js/jquery/2.0.3.js"></script>
@@ -20,30 +21,32 @@
 {% raw %}
     <body ng-controller="FlaskMapController">
         <div ng-class="mapDisplayMode" class="mapDisplayColumn">
-            <button class="btn normalScreenButton" title="Mostrar editor" ng-show="fullscreenMap" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-small"></i></button>
+            <button class="btn btn-default normalScreenButton" title="Mostrar editor" ng-show="fullscreenMap" type="submit" ng-click="toggleFullscreenMap()"><i class="glyphicon glyphicon-resize-small"></i></button>
             <googlemap map-to-model="gmap" on-dblclick="emitMapDoubleClick" />
         </div>
         <div ng-show="!fullscreenMap" class="toolColumn">
             <div style="height: 100%;">
                 <div style="padding: 4px;">
-                    <div class="navbar" style="margin-bottom: 0;">
-                        <div class="navbar-inner">
-                            <a class="brand" href=".">Flaskmap</a>
-                            <ul class="nav">
+                    <div class="navbar navbar-inverse" style="margin-bottom: 0;">
+                        <div class="navbar-header">
+                            <a class="navbar-brand" href=".">Flaskmap</a>
+                        </div>
+                        <div class="navbar-collapse">
+                            <ul class="nav navbar-nav">
                                 <li ng-class="getMenuButtonClass('poi')">
                                     <a ng-href="#/poi{{pathPoiEditor}}">POI</a>
                                     <div class="btn-group" ng-show="isContext('poi')">
-                                        <button class="btn" title="Guardar todas las listas" ng-click="$broadcast('save-all-containers')"><i class="icon-hdd"></i></button>
+                                        <button class="menuButton btn btn-default" title="Guardar todas las listas" ng-click="$broadcast('save-all-containers')"><i class="glyphicon glyphicon-hdd"></i></button>
                                     </div>
                                 </li>
                                 <li ng-class="getMenuButtonClass('routes')"><a href="#/routes{{pathRouteEditor}}">Rutas</a></li>
                             </ul>
-                            <ul class="nav pull-right">
+                            <form class="navbar-form navbar-right navbar-collapse">
+                                <button class="btn btn-default" title="Ocultar editor" type="submit" ng-click="toggleFullscreenMap()"><i class="glyphicon glyphicon-resize-full"></i></button>
+                            </form>
+                            <ul class="nav navbar-nav navbar-right">
                                 <li>
                                     <a href="https://github.com/Mithrandir0x/flaskmap">Github</a>
-                                </li>
-                                <li>
-                                    <button class="btn" title="Ocultar editor" type="submit" ng-click="toggleFullscreenMap()"><i class="icon-resize-full"></i></button>
                                 </li>
                             </ul>
                         </div>
@@ -51,45 +54,42 @@
                 </div>
                 <div ng-controller="PoiEditor" ng-show="isContext('poi')" class="contextBox poi">
                     <div ng-show="!selectedContainer">
-                        <span>Puede seleccionar una lista de puntos de interés <span class="caret"></span> o crear una nueva lista <i class="icon-file"></i>:</span>
+                        <span>Puede seleccionar una lista de puntos de interés <span class="caret"></span> o crear una nueva lista <i class="glyphicon glyphicon-file"></i>:</span>
                     </div>
-                    <div class="clear: both;">
-                        <div class="input-prepend btn-group">
-                            <button class="btn" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="icon-file"></i></button>
-                            <button class="btn" title="Guardar lista" type="submit" ng-show="selectedContainer" ng-click="savePoiContainer()"><i class="icon-hdd"></i></button>
-                            <input type="text" class="poiListName" ng-model="selectedContainer.name" ng-disabled="!selectedContainer" />
-                            <button class="btn dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
-                            <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="poiMenuItems" style="width: 100%; margin-left: -1px;">
+                    <div class="input-group input-group-sm" style="margin-bottom: 4px;">
+                        <div class="input-group-btn">
+                            <button class="btn btn-default" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="glyphicon glyphicon-file"></i></button>
+                            <button class="btn btn-default" title="Guardar lista" type="submit" ng-show="selectedContainer" ng-click="savePoiContainer()"><i class="glyphicon glyphicon-hdd"></i></button>
+                            <a ng-show="selectedContainer" class="btn btn-info" title="Descargar lista" href="/poi/{{selectedContainer.id}}.ov2"><i class="glyphicon glyphicon-download"></i></a>
+                            <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="button"><span class="caret"></span></button>
+                            <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="poiMenuItems">
                                 <li ng-repeat="container in containers | orderBy:'name'" style="position: relative;">
-                                    <input title="Mostrar puntos de interés" type="checkbox" ng-click="showContainerMarkers($event, container)" ng-model="container.showPoints" ng-show="container != selectedContainer" style="position: absolute; left: 4px; top: 2px;" />
+                                    <input class="displayPOIs" title="Mostrar puntos de interés" type="checkbox" ng-click="showContainerMarkers($event, container)" ng-model="container.showPoints" ng-show="container != selectedContainer" />
                                     <a ng-click="selectContainer(container)">{{ container.name }}</a>
-                                    <a class="badge badge-inverse" ng-click="preventDefault($event)" title="Descargar lista" href="/poi/{{container.id}}.ov2"><i class="icon-download icon-white"></i></a>
+                                    <a class="badge badge-inverse" ng-click="preventDefault($event)" title="Descargar lista" href="/poi/{{container.id}}.ov2"><i class="glyphicon glyphicon-download glyphicon glyphicon-white"></i></a>
                                 </li>
                                 <li ng-show="containers.length != 0" class="divider"></li>
                                 <li ng-click="createPoiContainer()">
                                     <a>Crear nueva lista</a>
                                 </li>
                             </ul>
-                            <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedContainer" ng-click="deletePoiContainer()"><i class="icon-trash icon-white"></i></button>
                         </div>
-                        <div style="float: right;">
-                            <div class="btn-group" style="float: left;">
-                            </div>
-                            <div ng-show="selectedContainer" class="btn-group" style="float: left; margin-left: 8px;">
-                                <a class="btn" title="Descargar lista" href="/poi/{{selectedContainer.id}}.ov2"><i class="icon-download"></i></a>
-                                <!-- button class="btn" title="Subir lista" type="submit" ng-click=""><i class="icon-upload"></i></button -->
-                            </div>
+                        <input type="text" class="form-control poiListName" ng-model="selectedContainer.name" ng-disabled="!selectedContainer" />
+                        <div class="input-group-btn">
+                            <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedContainer" ng-click="deletePoiContainer()"><i class="glyphicon glyphicon-trash glyphicon glyphicon-white"></i></button>
                         </div>
                     </div>
                     <div style="overflow-y: auto; height: 90%;" ui-sortable ng-model="selectedContainer.content">
                         <div class="poiRow" ng-repeat="poi in selectedContainer.content">
-                            <div class="input-append">
-                                <input class="poiName" type="text" ng-model="poi.name" />
-                                <input class="latlngInput" type="number" ng-model="poi.latitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-90" max="90" />
-                                <input class="latlngInput" type="number" ng-model="poi.longitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-180" max="180" />
-                                <button class="btn" title="Añadir a ruta seleccionada" type="submit" ng-click="sendPoiToRoute(selectedRoute, poi)"><i class="icon-share-alt"></i></button>
-                                <button class="btn" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(poi)"><i class="icon-screenshot"></i></button>
-                                <button class="btn" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="icon-trash"></i></button>
+                            <div class="input-group input-group-sm">
+                                <input class="form-control poiName" type="text" ng-model="poi.name" />
+                                <input class="form-control latlngInput" type="number" ng-model="poi.latitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-90" max="90" />
+                                <input class="form-control latlngInput" type="number" ng-model="poi.longitude" ng-change="updatePoiMarker(poi)" step="0.01" min="-180" max="180" />
+                                <div class="input-group-btn">
+                                    <button class="btn btn-default" title="Añadir a ruta seleccionada" type="submit" ng-click="sendPoiToRoute(selectedRoute, poi)"><i class="glyphicon glyphicon-share-alt"></i></button>
+                                    <button class="btn btn-default" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(poi)"><i class="glyphicon glyphicon-screenshot"></i></button>
+                                    <button class="btn btn-default" title="Borrar POI" type="submit" ng-click="deletePoi($index)"><i class="glyphicon glyphicon-trash"></i></button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -111,67 +111,89 @@
                 </div>
                 <div ng-controller="RouteEditor" class="contextBox routes" ng-show="isContext('routes')">
                     <div ng-show="!selectedRoute">
-                        <span>Puede seleccionar una ruta <span class="caret"></span> o crear una nueva <i class="icon-file"></i>:</span>
+                        <span>Puede seleccionar una ruta <span class="caret"></span> o crear una nueva <i class="glyphicon glyphicon-file"></i>:</span>
                     </div>
-                    <div class="input-prepend btn-group">
-                        <button class="btn" title="Crear nueva ruta" type="submit" ng-click="createRoute()"><i class="icon-file"></i></button>
-                        <button class="btn" title="Guardar lista" type="submit" ng-show="selectedRoute" ng-click="saveRoute()"><i class="icon-hdd"></i></button>
-                        <button class="btn" title="Información" type="submit" ng-show="selectedRoute" ng-click="toggleWaypointMetadata()"><i class="icon-info-sign"></i></button>
-                        <input type="text" class="poiListName span2" ng-model="selectedRoute.name" ng-disabled="!selectedRoute" />
-                        <button class="btn dropdown-toggle" data-toggle="dropdown" ng-disabled="updatingRoute" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
-                        <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="routeItems" style="width: 100%; margin-left: -1px;">
-                            <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:'name'">
-                                <a>{{ route.name }}</a>
-                            </li>
-                            <li ng-show="containers.length != 0" class="divider"></li>
-                            <li ng-click="createRoute()">
-                                <a>Crear nueva ruta</a>
-                            </li>
-                        </ul>
-                        <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedRoute" ng-click="deleteRoute()"><i class="icon-trash icon-white"></i></button>
-                    </div>
-                    <div ng-show="selectedRoute" class="meta" style="margin-left: 3px;">
-                        <div class="input-prepend input-append distance">
-                            <span class="add-on"><i class="icon-road"></i></span>
-                            <input class="span1" readonly="readonly" type="text" ng-model="selectedRoute.distance" />
-                            <span class="add-on">Km</span>
+                    <div class="row" style="margin-bottom: 4px;">
+                        <div class="col-md-6">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-btn">
+                                    <button class="btn btn-default" title="Crear nueva ruta" type="submit" ng-click="createRoute()"><i class="glyphicon glyphicon-file"></i></button>
+                                    <button class="btn btn-default" title="Guardar lista" type="submit" ng-show="selectedRoute" ng-click="saveRoute()"><i class="glyphicon glyphicon-hdd"></i></button>
+                                    <button class="btn btn-default" title="Información" type="submit" ng-show="selectedRoute" ng-click="toggleWaypointMetadata()"><i class="glyphicon glyphicon-info-sign"></i></button>
+                                    <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" ng-disabled="updatingRoute" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
+                                    <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="routeItems">
+                                        <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:'name'">
+                                            <a>{{ route.name }}</a>
+                                        </li>
+                                        <li ng-show="containers.length != 0" class="divider"></li>
+                                        <li ng-click="createRoute()">
+                                            <a>Crear nueva ruta</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <input type="text" class="poiListName form-control" ng-model="selectedRoute.name" ng-disabled="!selectedRoute" />
+                                <div class="input-group-btn">
+                                    <button class="btn btn-danger" title="Eliminar lista" type="submit" ng-show="selectedRoute" ng-click="deleteRoute()"><i class="glyphicon glyphicon-trash glyphicon glyphicon-white"></i></button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="input-prepend input-append duration">
-                            <span class="add-on"><i class="icon-time"></i></span>
-                            <input class="span2" type="text" readonly="readonly" ng-model="selectedRoute.duration" />
+                        <div ng-show="selectedRoute" class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-addon"><i class="glyphicon glyphicon-road"></i></span>
+                                <input class="form-control" readonly="readonly" type="text" ng-model="selectedRoute.distance" />
+                                <span class="input-group-addon">Km</span>
+                            </div>
+                        </div>
+                        <div ng-show="selectedRoute" class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
+                                <input class="form-control" type="text" readonly="readonly" ng-model="selectedRoute.duration" />
+                            </div>
                         </div>
                     </div>
                     <div style="overflow-y: auto; height: 90%;" ui-sortable="sortableOptions" ng-model="selectedRoute.content">
                         <div class="poiRow" ng-repeat="wp in selectedRoute.content">
-                            <div class="input-append input-prepend">
-                                <span class="add-on">{{$index}}</span>
-                                <input class="wpName" type="text" ng-model="wp.name" />
-                                <!-- input class="latlngInput" type="number" step="0.01" ng-model="wp.latitude" min="-90" max="90" / -->
-                                <!-- input class="latlngInput" type="number" step="0.01" ng-model="wp.longitude" min="-180" max="180" / -->
-                                <!-- button class="btn" title="Añadir a ruta" type="submit"><i class="icon-road"></i></button -->
-                                <button class="btn" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(wp)"><i class="icon-screenshot"></i></button>
-                                <button class="btn" title="Información" type="submit" ng-click="toggleWaypointMetadata(wp)"><i class="icon-info-sign"></i></button>
-                                <button class="btn" title="Borrar punto de ruta" type="submit" ng-click="deleteRouteWaypoint($index)"><i class="icon-trash"></i></button>
-                            </div>
-                            <div class="distance control-group info input-append input-prepend">
-                                <span class="add-on"><i class="icon-road"></i></span>
-                                <input class="span1" readonly="readonly" type="text" ng-model="wp.distance" />
-                                <span class="add-on">Km</span>
-                            </div>
-                            <div class="meta" ng-show="wp.showMeta">
-                                <div ng-show="!$last" class="input-prepend input-append distance">
-                                    <span class="add-on"><i class="icon-road"></i> {{$index}} &rarr; {{$index + 1}}</span>
-                                    <input class="span1" readonly="readonly" type="text" ng-model="wp.distanceLeg" />
-                                    <span class="add-on">Km</span>
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-addon">{{$index}}</span>
+                                        <input class="wpName form-control" type="text" ng-model="wp.name" />
+                                        <!-- input class="latlngInput" type="number" step="0.01" ng-model="wp.latitude" min="-90" max="90" / -->
+                                        <!-- input class="latlngInput" type="number" step="0.01" ng-model="wp.longitude" min="-180" max="180" / -->
+                                        <!-- button class="btn" title="Añadir a ruta" type="submit"><i class="glyphicon glyphicon-road"></i></button -->
+                                        <div class="input-group-btn">
+                                            <button class="btn btn-default" title="Ver Punto de Interés" type="submit" ng-click="panMapTo(wp)"><i class="glyphicon glyphicon-screenshot"></i></button>
+                                            <button class="btn btn-default" title="Información" type="submit" ng-click="toggleWaypointMetadata(wp)"><i class="glyphicon glyphicon-info-sign"></i></button>
+                                            <button class="btn btn-default" title="Borrar punto de ruta" type="submit" ng-click="deleteRouteWaypoint($index)"><i class="glyphicon glyphicon-trash"></i></button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div ng-show="!$last" class="input-prepend input-append duration">
-                                    <span class="add-on"><i class="icon-time"></i> {{$index}} &rarr; {{$index + 1}}</span>
-                                    <input class="span2" type="text" readonly="readonly" ng-model="wp.duration" />
+                                <div class="col-md-3">
+                                    <div class="distance info input-group input-group-sm">
+                                        <span class="input-group-addon"><i class="glyphicon glyphicon-road"></i></span>
+                                        <input class="form-control" readonly="readonly" type="text" ng-model="wp.distance" />
+                                        <span class="input-group-addon">Km</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="meta row" style="margin-top: 12px;" ng-show="wp.showMeta">
+                                <div class="col-md-6">
+                                    <div ng-show="!$last" class="input-group input-group-sm distance">
+                                        <span class="input-group-addon"><i class="glyphicon glyphicon-road"></i> {{$index}} &rarr; {{$index + 1}}</span>
+                                        <input class="form-control" readonly="readonly" type="text" ng-model="wp.distanceLeg" />
+                                        <span class="input-group-addon">Km</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div ng-show="!$last" class="input-group input-group-sm duration">
+                                        <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i> {{$index}} &rarr; {{$index + 1}}</span>
+                                        <input class="form-control" type="text" readonly="readonly" ng-model="wp.duration" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div ng-show="updatingRoute" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.2);"></div>
+                    <div ng-show="updatingRoute" class="loader"></div>
                 </div>
             </div>
         </div>
