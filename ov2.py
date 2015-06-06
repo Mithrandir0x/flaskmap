@@ -57,7 +57,8 @@ def save_pois_to_stream(stream, pois):
     """
     for poi in pois:
         pf = '<ci2l%ss\x00' % len(poi.name)
-        name = poi.name.encode('utf8')
+        # name = poi.name.encode('utf8')
+        name = poi.name.encode('ascii', 'ignore')
         length = len(poi.name) + 14
         longitude = int(float(poi.longitude) * 100000)
         latitude = int(float(poi.latitude) * 100000)

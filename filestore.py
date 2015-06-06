@@ -7,6 +7,7 @@ import io
 import json
 import os
 import ov2
+import itn
 
 class FileStore():
     def __init__(self, datapath = './bin/data/'):
@@ -133,7 +134,7 @@ class FileStore():
                 if self.stream:
                     self.stream.close()
         return StreamOV2(self.poiDataPath, uid)
-    
+
     def _load_route(self, folder):
         path = self.routeDataPath + folder
         route = None
@@ -209,11 +210,11 @@ class FileStore():
                         })))
                 with io.open('%s/route.json' % path, 'w') as stream:
                     stream.write(unicode(json.dumps(content, default = lambda o: o.__dict__)))
+                with io.open('%s/route.itn' % path, 'w') as stream:
+                    itn.save_route_to_stream(stream, content)
                 return
             raise Exception('Malformed meta.json file at [%s]' % uid)
         raise Exception('Unknown UID')
-
-
 
     def delete_route(self, uid):
         path = '%s/%s/' % ( self.routeDataPath, uid )
@@ -233,6 +234,20 @@ class FileStore():
                 return
             raise Exception('Malformed meta.json file at [%s]' % uid)
         raise Exception('Unknown UID')
+
+    def get_stream_itn(self, uid):
+        class StreamITN():
+            def __init__(self, datapath = None, uid = None):
+                self.uid = uid
+                self.routeDataPath = datapath
+                self.stream = None
+            def __enter__(self):
+                self.stream = io.open('%s/%s/route.itn' % ( self.routeDataPath, self.uid ), 'r', buffering = 4096)
+                return self.stream
+            def __exit__(self, ex_type, ex_value, traceback):
+                if self.stream:
+                    self.stream.close()
+        return StreamITN(self.routeDataPath, uid)
 
     def shutdown(self):
         pass

@@ -60,7 +60,7 @@
                         <div class="input-group-btn">
                             <button class="btn btn-default" title="Crear nueva lista" type="submit" ng-click="createPoiContainer()"><i class="glyphicon glyphicon-file"></i></button>
                             <button class="btn btn-default" title="Guardar lista" type="submit" ng-show="selectedContainer" ng-click="savePoiContainer()"><i class="glyphicon glyphicon-hdd"></i></button>
-                            <a ng-show="selectedContainer" class="btn btn-info" title="Descargar lista" href="/poi/{{selectedContainer.id}}.ov2"><i class="glyphicon glyphicon-download"></i></a>
+                            <a ng-show="selectedContainer" class="btn btn-info" title="Descargar lista" href="/poi/{{selectedContainer.id}}/{{selectedContainer.name}}.ov2"><i class="glyphicon glyphicon-download"></i></a>
                             <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" title="Cambiar de lista" type="button"><span class="caret"></span></button>
                             <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="poiMenuItems">
                                 <li ng-repeat="container in containers | orderBy:'name'" style="position: relative;">
@@ -120,6 +120,7 @@
                                     <button class="btn btn-default" title="Crear nueva ruta" type="submit" ng-click="createRoute()"><i class="glyphicon glyphicon-file"></i></button>
                                     <button class="btn btn-default" title="Guardar lista" type="submit" ng-show="selectedRoute" ng-click="saveRoute()"><i class="glyphicon glyphicon-hdd"></i></button>
                                     <button class="btn btn-default" title="Información" type="submit" ng-show="selectedRoute" ng-click="toggleWaypointMetadata()"><i class="glyphicon glyphicon-info-sign"></i></button>
+                                    <a ng-show="selectedRoute" class="btn btn-info" title="Descargar ruta" href="/route/{{selectedRoute.id}}/{{selectedRoute.name}}.itn"><i class="glyphicon glyphicon-download"></i></a>
                                     <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" ng-disabled="updatingRoute" title="Cambiar de lista" type="submit"><span class="caret"></span></button>
                                     <ul class="dropdown-menu poiListSelector" role="menu" aria-labelledby="routeItems">
                                         <li ng-click="selectRoute(route)" ng-repeat="route in routes | orderBy:'name'">
@@ -193,7 +194,9 @@
                             </div>
                         </div>
                     </div>
-                    <div ng-show="updatingRoute" class="loader"></div>
+                    <div ng-show="updatingRoute" class="loader">
+                        <p style="  text-align: center; margin-top: 25%;">Cargando...</p>
+                    </div>
                 </div>
             </div>
         </div>

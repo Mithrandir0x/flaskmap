@@ -13,11 +13,17 @@ import traceback
 
 app = Flask(__name__)
 
-def getOv2(datastore, uid):
+def getOv2(datastore, uid, filename):
     def stream_ov2():
         with datastore.get_stream_ov2(uid) as stream:
             yield stream.read()
     return Response(stream_ov2(), mimetype='application/octet-stream')
+
+def getItn(datastore, uid, filename):
+    def stream_itn():
+        with datastore.get_stream_itn(uid) as stream:
+            yield stream.read()
+    return Response(stream_itn(), mimetype='application/itn')
 
 def json_response(function):
     @wraps(function)
@@ -69,6 +75,11 @@ def createPoiContainer():
 def getOv2File(uid):
     datastore = getStore()
     return getOv2(datastore, uid)
+
+@app.route('/poi/<uid>/<filename>.ov2', methods=['GET'])
+def getOv2FileWithName(uid, filename):
+    datastore = getStore()
+    return getOv2(datastore, uid, filename)
 
 @app.route('/poi/<uid>/', methods=['PUT'])
 def savePoiContainer(uid):
@@ -142,6 +153,16 @@ def deleteRoute(uid):
         return make_response('')
     except Exception:
         abort(500)
+
+@app.route('/route/<uid>.itn', methods=['GET'])
+def getItnFile(uid):
+    datastore = getStore()
+    return getItn(datastore, uid, None)
+
+@app.route('/route/<uid>/<filename>.itn', methods=['GET'])
+def getItnFileWithName(uid, filename):
+    datastore = getStore()
+    return getItn(datastore, uid, filename)
 
 @app.route('/favicon.ico')
 def favicon():
